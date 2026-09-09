@@ -8,3 +8,10 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+filterwarnings = [
+    # Both are inside dependencies, not our code:
+    # python-jose still calls datetime.utcnow() (jose/jwt.py);
+    # starlette.testclient references a deprecated anyio alias.
+    "ignore:datetime.datetime.utcnow:DeprecationWarning:jose.jwt",
+    "ignore:The anyio.abc.BlockingPortal alias is deprecated:DeprecationWarning",
+]
