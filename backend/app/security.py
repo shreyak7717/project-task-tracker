@@ -36,6 +36,11 @@ def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
 
+# Verified against when a login email is unknown, so an attacker can't tell
+# "no such user" from "wrong password" by timing the response.
+DUMMY_PASSWORD_HASH = pwd_context.hash("timing-equaliser-not-a-real-password")
+
+
 # --- JSON Web Tokens ------------------------------------------------------
 
 

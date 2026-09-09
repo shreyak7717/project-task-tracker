@@ -1,7 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import settings
+from app.routers import auth
+from app.services.errors import ServiceError
 
 app = FastAPI(title="Project & Task Tracker API", version="0.1.0")
 
@@ -14,6 +17,15 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(ServiceError)
+async def _service_error_handler(_: Request, exc: ServiceError) -> JSONResponse:
+    """Translate domain errors raised by the service layer into JSON responses."""
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+
 @app.get("/api/health", tags=["meta"])
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+app.include_router(auth.router)
