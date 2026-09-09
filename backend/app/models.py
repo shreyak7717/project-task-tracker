@@ -251,3 +251,34 @@ class AlertDismissal(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+
+class Invitation(Base):
+    """A pending or completed invitation for someone to join as a member.
+
+    Accounts are never created directly. A manager issues an invitation carrying
+    only an email; the invitee sets their own name and password when they accept.
+    Only the SHA-256 hash of the one-time token is stored. ``email`` is stored
+    normalised (stripped, lower-cased) but is deliberately not unique — a fresh
+    invitation may be issued after an old one expires. ``users.email`` uniqueness
+    is the backstop against two concurrent accepts.
+    """
+
+    __tablename__ = "invitations"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    role: Mapped[Role] = mapped_column(String(20), nullable=False, default=Role.MEMBER)
+    invited_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    accepted_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    invited_by: Mapped[User] = relationship(foreign_keys=[invited_by_id])
+    accepted_user: Mapped[User | None] = relationship(foreign_keys=[accepted_user_id])
