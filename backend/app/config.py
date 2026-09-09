@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 7
     cors_origins: list[str] = ["http://localhost:5173"]
 
+    # Base URL of the SPA, used to build the invitation accept link.
+    frontend_base_url: str = "http://localhost:5173"
+    invite_expiry_days: int = 7
+
 
 @lru_cache
 def get_settings() -> Settings:
