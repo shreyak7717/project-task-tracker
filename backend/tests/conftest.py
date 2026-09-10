@@ -190,6 +190,7 @@ def make_task(
         status: TaskStatus = TaskStatus.BACKLOG,
         priority: TaskPriority = TaskPriority.MEDIUM,
         due_date=None,
+        completed_at=None,
         created_by: User | None = None,
         blocked_from_status: TaskStatus | None = None,
     ) -> Task:
@@ -201,6 +202,7 @@ def make_task(
             status=status,
             priority=priority,
             due_date=due_date,
+            completed_at=completed_at,
             blocked_from_status=blocked_from_status,
             created_by_id=(created_by or manager).id,
         )
