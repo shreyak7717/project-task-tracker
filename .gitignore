@@ -20,3 +20,6 @@ htmlcov/
 *.egg-info/
 .idea/
 .vscode/
+
+# Private working drafts for the docs/ files — not part of the submission.
+mock_doc/
