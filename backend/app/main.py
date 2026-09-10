@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.routers import auth, projects, tasks, users
+from app.routers import auth, projects, task_list, tasks, users
 from app.services.errors import ServiceError
 
 app = FastAPI(title="Project & Task Tracker API", version="0.1.0")
@@ -31,4 +31,5 @@ def health() -> dict[str, str]:
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(projects.router)
+app.include_router(task_list.router)  # before tasks.router: literal paths win
 app.include_router(tasks.router)
