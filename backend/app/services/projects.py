@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models import Project, ProjectMembership, User
 from app.schemas.project import ProjectCreate, ProjectUpdate
+from app.services import assignments
 from app.services.errors import ConflictError, NotFoundError, ValidationError
 from app.services.visibility import visible_project_ids
 
@@ -123,6 +124,8 @@ def remove_member(db: Session, *, project: Project, user_id: uuid.UUID) -> None:
     )
     if membership is None:
         raise NotFoundError("User is not a member of this project")
+
+    # Removing someone from a project unassigns them from its tasks (goal 5).
+    assignments.unassign_from_project(db, project=project, user_id=user_id)
     db.delete(membership)
-    # Session 4: also unassign this user from every task in this project.
     db.flush()
