@@ -24,6 +24,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Identity,
+    Index,
     String,
     Text,
     UniqueConstraint,
@@ -187,14 +188,19 @@ class TaskAssignee(Base):
     """Many-to-many between tasks and users. Only project members may appear."""
 
     __tablename__ = "task_assignees"
-    __table_args__ = (UniqueConstraint("task_id", "user_id", name="uq_assignee_task_user"),)
+    __table_args__ = (
+        UniqueConstraint("task_id", "user_id", name="uq_assignee_task_user"),
+        # Covers "tasks assigned to user X" (the /api/me/tasks hot path and the
+        # assignee filter) as an index-only scan, and plain WHERE user_id = ?.
+        Index("ix_task_assignees_user_id_task_id", "user_id", "task_id"),
+    )
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     task_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     assigned_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
