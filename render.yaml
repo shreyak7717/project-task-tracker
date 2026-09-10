@@ -1,0 +1,33 @@
+# Render blueprint for the API. Create the database on Neon first, then paste its
+# pooled connection string into DATABASE_URL when Render prompts for the
+# sync:false vars.
+services:
+  - type: web
+    name: task-tracker-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    # Migrations and the initial-manager seed run on every deploy; both are
+    # idempotent.
+    startCommand: >-
+      alembic upgrade head &&
+      python -m app.seed &&
+      uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: DATABASE_URL
+        sync: false # Neon pooled string, must start postgresql+psycopg2://
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false # JSON array, e.g. ["https://<app>.vercel.app"]
+      - key: FRONTEND_BASE_URL
+        sync: false # https://<app>.vercel.app
+      - key: INITIAL_MANAGER_EMAIL
+        sync: false
+      - key: INITIAL_MANAGER_PASSWORD
+        sync: false
+      - key: INITIAL_MANAGER_NAME
+        sync: false
