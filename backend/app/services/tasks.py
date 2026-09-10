@@ -218,6 +218,6 @@ def get_timeline(db: Session, *, task: Task) -> list[TaskEvent]:
             select(TaskEvent)
             .options(selectinload(TaskEvent.actor))
             .where(TaskEvent.task_id == task.id)
-            .order_by(TaskEvent.created_at, TaskEvent.id)
+            .order_by(TaskEvent.seq)
         )
     )

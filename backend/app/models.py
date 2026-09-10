@@ -17,11 +17,13 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     Date,
     DateTime,
     ForeignKey,
+    Identity,
     String,
     Text,
     UniqueConstraint,
@@ -210,8 +212,13 @@ class TaskEvent(Base):
     """
 
     __tablename__ = "task_events"
+    __table_args__ = (UniqueConstraint("seq", name="uq_task_events_seq"),)
 
     id: Mapped[uuid.UUID] = _uuid_pk()
+    # Database-assigned monotonic order. created_at is only second-resolution and
+    # equal for events written in the same transaction, so the timeline is
+    # ordered by this instead.
+    seq: Mapped[int] = mapped_column(BigInteger, Identity(), nullable=False)
     task_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True
     )
