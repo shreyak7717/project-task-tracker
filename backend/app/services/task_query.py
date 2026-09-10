@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.enums import TaskStatus
 from app.models import Project, Task, TaskAssignee, User
 from app.schemas.task import TaskListParams
-from app.services.visibility import visible_project_ids
+from app.services.visibility import task_visibility_clause
 
 
 @dataclass
@@ -54,11 +54,9 @@ def _escape_like(term: str) -> str:
 def _filtered(db: Session, *, viewer: User, params: TaskListParams) -> Select:
     stmt = select(Task).join(Project, Task.project_id == Project.id)
 
-    ids = visible_project_ids(db, viewer)
-    if ids is not None:  # not a manager
-        if not ids:
-            return stmt.where(func.false())
-        stmt = stmt.where(Task.project_id.in_(ids))
+    visible = task_visibility_clause(db, viewer)
+    if visible is not None:
+        stmt = stmt.where(visible)
 
     if params.project_id is not None:
         stmt = stmt.where(Task.project_id == params.project_id)

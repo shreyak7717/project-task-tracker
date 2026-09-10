@@ -12,11 +12,11 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import ColumnElement, false, select
 from sqlalchemy.orm import Session
 
 from app.enums import Role
-from app.models import Project, ProjectMembership, User
+from app.models import Project, ProjectMembership, Task, User
 from app.services.errors import NotFoundError
 
 
@@ -35,6 +35,21 @@ def visible_project_ids(db: Session, user: User) -> set[uuid.UUID] | None:
     return set(
         db.scalars(select(ProjectMembership.project_id).where(ProjectMembership.user_id == user.id))
     )
+
+
+def task_visibility_clause(db: Session, user: User) -> ColumnElement[bool] | None:
+    """A ``WHERE`` predicate restricting ``Task`` rows to the user's visible
+    projects, or ``None`` for a manager (no restriction).
+
+    Every dashboard and alert query uses this so "members only see their
+    projects" is applied identically everywhere, not re-derived per query.
+    """
+    ids = visible_project_ids(db, user)
+    if ids is None:
+        return None
+    if not ids:
+        return false()
+    return Task.project_id.in_(ids)
 
 
 def can_see_project(db: Session, user: User, project: Project) -> bool:
