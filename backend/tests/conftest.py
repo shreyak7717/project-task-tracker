@@ -24,9 +24,9 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import Base, get_db
-from app.enums import Role
+from app.enums import Role, TaskPriority, TaskStatus
 from app.main import app
-from app.models import Invitation, User
+from app.models import Invitation, Project, ProjectMembership, Task, User
 from app.security import create_access_token, generate_invite_token, hash_password
 
 _DEV_URL = make_url(settings.database_url)
@@ -149,5 +149,65 @@ def make_invitation(db: Session, manager: User) -> Callable[..., tuple[Invitatio
         db.add(invitation)
         db.flush()
         return invitation, raw_token
+
+    return _factory
+
+
+@pytest.fixture
+def make_project(db: Session, manager: User) -> Callable[..., Project]:
+    def _factory(
+        *,
+        key: str = "ACME",
+        name: str = "Acme Engagement",
+        owner: User | None = None,
+        archived: bool = False,
+        members: tuple[User, ...] = (),
+    ) -> Project:
+        owner = owner or manager
+        project = Project(
+            key=key, name=name, description="", owner_id=owner.id, is_archived=archived
+        )
+        db.add(project)
+        db.flush()
+        seen = {owner.id}
+        db.add(ProjectMembership(project_id=project.id, user_id=owner.id))
+        for extra in members:
+            if extra.id not in seen:
+                db.add(ProjectMembership(project_id=project.id, user_id=extra.id))
+                seen.add(extra.id)
+        db.flush()
+        return project
+
+    return _factory
+
+
+@pytest.fixture
+def make_task(
+    db: Session, make_project: Callable[..., Project], manager: User
+) -> Callable[..., Task]:
+    def _factory(
+        *,
+        project: Project | None = None,
+        title: str = "A task",
+        status: TaskStatus = TaskStatus.BACKLOG,
+        priority: TaskPriority = TaskPriority.MEDIUM,
+        due_date=None,
+        created_by: User | None = None,
+        blocked_from_status: TaskStatus | None = None,
+    ) -> Task:
+        project = project or make_project()
+        task = Task(
+            project_id=project.id,
+            title=title,
+            description="",
+            status=status,
+            priority=priority,
+            due_date=due_date,
+            blocked_from_status=blocked_from_status,
+            created_by_id=(created_by or manager).id,
+        )
+        db.add(task)
+        db.flush()
+        return task
 
     return _factory
