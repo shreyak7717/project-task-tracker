@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -90,3 +91,89 @@ class TaskEventOut(BaseModel):
     body: str | None
     created_at: datetime
     actor: UserOut | None
+
+
+# --- assignment ----------------------------------------------------------
+
+
+class AssigneesUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    user_ids: list[uuid.UUID] = Field(default_factory=list)
+
+
+# --- cross-project list (goal 6) --------------------------------------
+
+
+class TaskListItem(TaskOut):
+    project_key: str
+    project_name: str
+    assignees: list[UserOut] = Field(default_factory=list)
+
+
+class TaskListParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    q: str | None = Field(default=None, max_length=200)
+    project_id: uuid.UUID | None = None
+    status: list[TaskStatus] | None = None
+    priority: list[TaskPriority] | None = None
+    assignee_id: uuid.UUID | None = None
+    unassigned: bool = False
+    overdue: bool = False
+    sort: Literal["due_date", "priority", "updated_at"] = "updated_at"
+    order: Literal["asc", "desc"] = "desc"
+    page: int = Field(default=1, ge=1)
+    page_size: int = Field(default=25, ge=1, le=100)
+
+
+class TaskPage(BaseModel):
+    items: list[TaskListItem]
+    total: int
+    page: int
+    page_size: int
+    pages: int
+
+
+# --- bulk actions (goal 7) -------------------------------------------
+
+
+class BulkTransition(BaseModel):
+    kind: Literal["transition"]
+    to_status: TaskStatus
+
+
+class BulkSetAssignees(BaseModel):
+    kind: Literal["set_assignees"]
+    user_ids: list[uuid.UUID] = Field(default_factory=list)
+
+
+class BulkSetDueDate(BaseModel):
+    kind: Literal["set_due_date"]
+    due_date: date | None = None
+
+
+BulkChange = Annotated[
+    BulkTransition | BulkSetAssignees | BulkSetDueDate,
+    Field(discriminator="kind"),
+]
+
+
+class BulkRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    task_ids: list[uuid.UUID] = Field(min_length=1, max_length=500)
+    change: BulkChange
+
+
+class BulkItemResult(BaseModel):
+    task_id: uuid.UUID
+    ok: bool
+    error: str | None = None
+
+
+class BulkResult(BaseModel):
+    results: list[BulkItemResult]
+    succeeded: int
+    failed: int
+
