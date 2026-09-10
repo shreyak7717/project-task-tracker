@@ -14,6 +14,7 @@ from fastapi import APIRouter, HTTPException, status
 from app.deps import CurrentUser, DbSession, ManagerUser
 from app.models import Task
 from app.schemas.task import (
+    AssigneesUpdate,
     CommentCreate,
     DependencyCreate,
     TaskCreate,
@@ -24,6 +25,8 @@ from app.schemas.task import (
     TaskUpdate,
     TransitionRequest,
 )
+from app.schemas.user import UserOut
+from app.services import assignments as assignment_service
 from app.services import tasks as task_service
 from app.services.lifecycle import allowed_transitions_for
 from app.services.visibility import get_visible_project_or_404
@@ -36,6 +39,9 @@ def _detail(db: DbSession, task: Task) -> TaskDetailOut:
     has_unfinished = any(d.status != "done" for d in deps)
     return TaskDetailOut(
         **TaskOut.model_validate(task).model_dump(),
+        assignees=[
+            UserOut.model_validate(u) for u in assignment_service.assignee_users(db, task)
+        ],
         dependencies=[TaskRef.model_validate(d) for d in deps],
         blocked_by_unfinished_dependency=has_unfinished,
         allowed_transitions=allowed_transitions_for(
@@ -146,6 +152,52 @@ def remove_dependency(
     task_service.remove_dependency(
         db, task=task, depends_on_task_id=dep_task_id, actor=user
     )
+    db.commit()
+
+
+# --- assignees ---------------------------------------------------
+#
+# Caller must be able to see the task (a project member, or any manager). Each
+# target assignee must be a member of the task's project — enforced by the
+# service, not here.
+
+
+@router.put("/api/tasks/{task_id}/assignees", response_model=TaskDetailOut)
+def set_assignees(
+    task_id: uuid.UUID, body: AssigneesUpdate, db: DbSession, user: CurrentUser
+) -> TaskDetailOut:
+    task = task_service.get_visible_task_or_404(db, user=user, task_id=task_id)
+    assignment_service.set_assignees(db, task=task, user_ids=body.user_ids, actor=user)
+    db.commit()
+    db.refresh(task)
+    return _detail(db, task)
+
+
+@router.post(
+    "/api/tasks/{task_id}/assignees/{user_id}",
+    response_model=TaskDetailOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_assignee(
+    task_id: uuid.UUID, user_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> TaskDetailOut:
+    task = task_service.get_visible_task_or_404(db, user=user, task_id=task_id)
+    assignment_service.assign(db, task=task, user_id=user_id, actor=user)
+    db.commit()
+    db.refresh(task)
+    return _detail(db, task)
+
+
+@router.delete(
+    "/api/tasks/{task_id}/assignees/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
+def remove_assignee(
+    task_id: uuid.UUID, user_id: uuid.UUID, db: DbSession, user: CurrentUser
+):
+    task = task_service.get_visible_task_or_404(db, user=user, task_id=task_id)
+    assignment_service.unassign(db, task=task, user_id=user_id, actor=user)
     db.commit()
 
 

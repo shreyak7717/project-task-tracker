@@ -73,6 +73,7 @@ class TaskOut(BaseModel):
 
 
 class TaskDetailOut(TaskOut):
+    assignees: list[UserOut] = Field(default_factory=list)
     dependencies: list[TaskRef] = Field(default_factory=list)
     # True when a move to Done is currently disallowed only because a blocking
     # task is unfinished — lets the UI show a specific hint.
