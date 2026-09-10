@@ -39,9 +39,7 @@ def _detail(db: DbSession, task: Task) -> TaskDetailOut:
     has_unfinished = any(d.status != "done" for d in deps)
     return TaskDetailOut(
         **TaskOut.model_validate(task).model_dump(),
-        assignees=[
-            UserOut.model_validate(u) for u in assignment_service.assignee_users(db, task)
-        ],
+        assignees=[UserOut.model_validate(u) for u in assignment_service.assignee_users(db, task)],
         dependencies=[TaskRef.model_validate(d) for d in deps],
         blocked_by_unfinished_dependency=has_unfinished,
         allowed_transitions=allowed_transitions_for(
@@ -69,9 +67,7 @@ def create_task(
 
 
 @router.get("/api/projects/{project_id}/tasks", response_model=list[TaskOut])
-def list_project_tasks(
-    project_id: uuid.UUID, db: DbSession, user: CurrentUser
-) -> list[Task]:
+def list_project_tasks(project_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Task]:
     project = get_visible_project_or_404(db, user, project_id)
     return task_service.list_for_project(db, project=project)
 
@@ -145,13 +141,9 @@ def add_dependency(
     status_code=status.HTTP_204_NO_CONTENT,
     response_model=None,
 )
-def remove_dependency(
-    task_id: uuid.UUID, dep_task_id: uuid.UUID, db: DbSession, user: CurrentUser
-):
+def remove_dependency(task_id: uuid.UUID, dep_task_id: uuid.UUID, db: DbSession, user: CurrentUser):
     task = task_service.get_visible_task_or_404(db, user=user, task_id=task_id)
-    task_service.remove_dependency(
-        db, task=task, depends_on_task_id=dep_task_id, actor=user
-    )
+    task_service.remove_dependency(db, task=task, depends_on_task_id=dep_task_id, actor=user)
     db.commit()
 
 
@@ -193,9 +185,7 @@ def add_assignee(
     status_code=status.HTTP_204_NO_CONTENT,
     response_model=None,
 )
-def remove_assignee(
-    task_id: uuid.UUID, user_id: uuid.UUID, db: DbSession, user: CurrentUser
-):
+def remove_assignee(task_id: uuid.UUID, user_id: uuid.UUID, db: DbSession, user: CurrentUser):
     task = task_service.get_visible_task_or_404(db, user=user, task_id=task_id)
     assignment_service.unassign(db, task=task, user_id=user_id, actor=user)
     db.commit()
@@ -220,8 +210,6 @@ def add_comment(
 
 
 @router.get("/api/tasks/{task_id}/timeline", response_model=list[TaskEventOut])
-def get_timeline(
-    task_id: uuid.UUID, db: DbSession, user: CurrentUser
-) -> list[TaskEventOut]:
+def get_timeline(task_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[TaskEventOut]:
     task = task_service.get_visible_task_or_404(db, user=user, task_id=task_id)
     return task_service.get_timeline(db, task=task)

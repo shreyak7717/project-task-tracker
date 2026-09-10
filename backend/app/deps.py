@@ -60,9 +60,7 @@ def get_current_user(
 
 def require_manager(user: Annotated[User, Depends(get_current_user)]) -> User:
     if user.role != Role.MANAGER:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Manager role required"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Manager role required")
     return user
 
 

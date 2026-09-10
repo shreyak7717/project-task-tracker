@@ -72,8 +72,12 @@ def test_patch_can_clear_the_due_date(client, manager, auth_headers, make_projec
 def test_only_a_manager_can_delete_a_task(client, manager, member, auth_headers, make_project):
     project = make_project(members=(member,))
     task = _task(client, auth_headers(member), project.id).json()
-    assert client.delete(f"/api/tasks/{task['id']}", headers=auth_headers(member)).status_code == 403
-    assert client.delete(f"/api/tasks/{task['id']}", headers=auth_headers(manager)).status_code == 204
+    assert (
+        client.delete(f"/api/tasks/{task['id']}", headers=auth_headers(member)).status_code == 403
+    )
+    assert (
+        client.delete(f"/api/tasks/{task['id']}", headers=auth_headers(manager)).status_code == 204
+    )
 
 
 def test_a_legal_transition_moves_the_task(client, manager, auth_headers, make_project):
@@ -83,7 +87,9 @@ def test_a_legal_transition_moves_the_task(client, manager, auth_headers, make_p
     assert resp.status_code == 200 and resp.json()["status"] == "in_progress"
 
 
-def test_an_illegal_transition_is_rejected_with_a_message(client, manager, auth_headers, make_project):
+def test_an_illegal_transition_is_rejected_with_a_message(
+    client, manager, auth_headers, make_project
+):
     project = make_project()
     task = _task(client, auth_headers(manager), project.id).json()
     resp = _move(client, auth_headers(manager), task["id"], "done")
@@ -91,11 +97,16 @@ def test_an_illegal_transition_is_rejected_with_a_message(client, manager, auth_
     assert "Illegal transition" in resp.json()["detail"]
 
 
-def test_a_task_cannot_finish_while_a_blocker_is_unfinished(client, manager, auth_headers, make_project):
+def test_a_task_cannot_finish_while_a_blocker_is_unfinished(
+    client, manager, auth_headers, make_project
+):
     project = make_project()
     blocker = _task(client, auth_headers(manager), project.id, title="Blocker").json()
     blocked = _task(
-        client, auth_headers(manager), project.id, title="Blocked",
+        client,
+        auth_headers(manager),
+        project.id,
+        title="Blocked",
         depends_on_task_ids=[blocker["id"]],
     ).json()
 

@@ -85,13 +85,9 @@ def transition(
     if from_status is BL:
         if not _is_unblock(task, to_status):
             back_to = task.blocked_from_status or "its previous status"
-            raise ValidationError(
-                f"A blocked task can only be unblocked (returned to {back_to})."
-            )
+            raise ValidationError(f"A blocked task can only be unblocked (returned to {back_to}).")
     elif to_status not in ALLOWED_TRANSITIONS[from_status]:
-        raise ValidationError(
-            f"Illegal transition {from_status.value} → {to_status.value}."
-        )
+        raise ValidationError(f"Illegal transition {from_status.value} → {to_status.value}.")
 
     if to_status is D and unfinished_dependency_titles:
         titles = list(unfinished_dependency_titles)

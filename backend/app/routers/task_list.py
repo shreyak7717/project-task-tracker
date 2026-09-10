@@ -65,16 +65,12 @@ def export_tasks(db: DbSession, user: CurrentUser, params: _Params) -> Streaming
     return StreamingResponse(
         csv_export.stream_csv(db, viewer=user, params=params),
         media_type="text/csv",
-        headers={
-            "Content-Disposition": f'attachment; filename="{csv_export.filename()}"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="{csv_export.filename()}"'},
     )
 
 
 @router.post("/api/tasks/bulk", response_model=BulkResult)
 def bulk_apply(body: BulkRequest, db: DbSession, user: CurrentUser) -> BulkResult:
-    result = bulk_service.apply_bulk(
-        db, viewer=user, task_ids=body.task_ids, change=body.change
-    )
+    result = bulk_service.apply_bulk(db, viewer=user, task_ids=body.task_ids, change=body.change)
     db.commit()
     return result

@@ -39,9 +39,7 @@ def create_project(body: ProjectCreate, db: DbSession, manager: ManagerUser) -> 
 def list_projects(
     db: DbSession, user: CurrentUser, include_archived: bool = Query(False)
 ) -> list[Project]:
-    return project_service.list_visible_projects(
-        db, user=user, include_archived=include_archived
-    )
+    return project_service.list_visible_projects(db, user=user, include_archived=include_archived)
 
 
 @router.get("/{project_id}", response_model=ProjectOut)
@@ -89,9 +87,7 @@ def list_members(project_id: uuid.UUID, db: DbSession, user: CurrentUser):
     response_model=ProjectMemberOut,
     status_code=status.HTTP_200_OK,
 )
-def add_member(
-    project_id: uuid.UUID, user_id: uuid.UUID, db: DbSession, manager: ManagerUser
-):
+def add_member(project_id: uuid.UUID, user_id: uuid.UUID, db: DbSession, manager: ManagerUser):
     project = _get_or_404(db, project_id)
     membership = project_service.add_member(db, project=project, user_id=user_id)
     db.commit()
@@ -104,9 +100,7 @@ def add_member(
     status_code=status.HTTP_204_NO_CONTENT,
     response_model=None,
 )
-def remove_member(
-    project_id: uuid.UUID, user_id: uuid.UUID, db: DbSession, manager: ManagerUser
-):
+def remove_member(project_id: uuid.UUID, user_id: uuid.UUID, db: DbSession, manager: ManagerUser):
     project = _get_or_404(db, project_id)
     project_service.remove_member(db, project=project, user_id=user_id)
     db.commit()

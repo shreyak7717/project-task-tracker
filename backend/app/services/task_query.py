@@ -80,15 +80,11 @@ def _filtered(db: Session, *, viewer: User, params: TaskListParams) -> Select:
     if params.assignee_id is not None:
         stmt = stmt.where(
             Task.id.in_(
-                select(TaskAssignee.task_id).where(
-                    TaskAssignee.user_id == params.assignee_id
-                )
+                select(TaskAssignee.task_id).where(TaskAssignee.user_id == params.assignee_id)
             )
         )
     if params.unassigned:
-        stmt = stmt.where(
-            ~select(TaskAssignee.id).where(TaskAssignee.task_id == Task.id).exists()
-        )
+        stmt = stmt.where(~select(TaskAssignee.id).where(TaskAssignee.task_id == Task.id).exists())
 
     if params.overdue:
         stmt = stmt.where(

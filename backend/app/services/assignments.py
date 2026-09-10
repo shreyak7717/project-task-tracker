@@ -26,9 +26,7 @@ from app.services.errors import NotFoundError, ValidationError
 def _project_member_ids(db: Session, project_id: uuid.UUID) -> set[uuid.UUID]:
     return set(
         db.scalars(
-            select(ProjectMembership.user_id).where(
-                ProjectMembership.project_id == project_id
-            )
+            select(ProjectMembership.user_id).where(ProjectMembership.project_id == project_id)
         )
     )
 
@@ -57,9 +55,7 @@ def assignee_users(db: Session, task: Task) -> list[User]:
 
 def assign(db: Session, *, task: Task, user_id: uuid.UUID, actor: User) -> TaskAssignee:
     existing = db.scalar(
-        select(TaskAssignee).where(
-            TaskAssignee.task_id == task.id, TaskAssignee.user_id == user_id
-        )
+        select(TaskAssignee).where(TaskAssignee.task_id == task.id, TaskAssignee.user_id == user_id)
     )
     if existing is not None:
         return existing  # idempotent
@@ -72,18 +68,14 @@ def assign(db: Session, *, task: Task, user_id: uuid.UUID, actor: User) -> TaskA
 
     row = TaskAssignee(task_id=task.id, user_id=user.id)
     db.add(row)
-    events.record(
-        db, task=task, actor=actor, event_type=TaskEventType.ASSIGNED, new=user.full_name
-    )
+    events.record(db, task=task, actor=actor, event_type=TaskEventType.ASSIGNED, new=user.full_name)
     db.flush()
     return row
 
 
 def unassign(db: Session, *, task: Task, user_id: uuid.UUID, actor: User) -> None:
     row = db.scalar(
-        select(TaskAssignee).where(
-            TaskAssignee.task_id == task.id, TaskAssignee.user_id == user_id
-        )
+        select(TaskAssignee).where(TaskAssignee.task_id == task.id, TaskAssignee.user_id == user_id)
     )
     if row is None:
         raise NotFoundError("That user is not assigned to this task")
@@ -126,15 +118,16 @@ def set_assignees(
         if uid not in current:
             db.add(TaskAssignee(task_id=task.id, user_id=uid))
             events.record(
-                db, task=task, actor=actor,
-                event_type=TaskEventType.ASSIGNED, new=users[uid].full_name,
+                db,
+                task=task,
+                actor=actor,
+                event_type=TaskEventType.ASSIGNED,
+                new=users[uid].full_name,
             )
     for uid in to_remove:
         db.delete(current[uid])
         name = removed_users[uid].full_name if uid in removed_users else None
-        events.record(
-            db, task=task, actor=actor, event_type=TaskEventType.UNASSIGNED, old=name
-        )
+        events.record(db, task=task, actor=actor, event_type=TaskEventType.UNASSIGNED, old=name)
 
     db.flush()
     return assignee_users(db, task)

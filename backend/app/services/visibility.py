@@ -33,23 +33,22 @@ def visible_project_ids(db: Session, user: User) -> set[uuid.UUID] | None:
     if is_manager(user):
         return None
     return set(
-        db.scalars(
-            select(ProjectMembership.project_id).where(
-                ProjectMembership.user_id == user.id
-            )
-        )
+        db.scalars(select(ProjectMembership.project_id).where(ProjectMembership.user_id == user.id))
     )
 
 
 def can_see_project(db: Session, user: User, project: Project) -> bool:
     if is_manager(user):
         return True
-    return db.scalar(
-        select(ProjectMembership.id).where(
-            ProjectMembership.project_id == project.id,
-            ProjectMembership.user_id == user.id,
+    return (
+        db.scalar(
+            select(ProjectMembership.id).where(
+                ProjectMembership.project_id == project.id,
+                ProjectMembership.user_id == user.id,
+            )
         )
-    ) is not None
+        is not None
+    )
 
 
 def get_visible_project_or_404(db: Session, user: User, project_id: uuid.UUID) -> Project:

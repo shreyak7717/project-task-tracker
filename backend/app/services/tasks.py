@@ -38,9 +38,7 @@ def get_visible_task_or_404(db: Session, *, user: User, task_id: uuid.UUID) -> T
 def list_for_project(db: Session, *, project: Project) -> list[Task]:
     return list(
         db.scalars(
-            select(Task)
-            .where(Task.project_id == project.id)
-            .order_by(Task.created_at.desc())
+            select(Task).where(Task.project_id == project.id).order_by(Task.created_at.desc())
         )
     )
 
@@ -111,9 +109,7 @@ def delete_task(db: Session, *, task: Task) -> None:
 # --- status -----------------------------------------------------------
 
 
-def transition_task(
-    db: Session, *, task: Task, to_status: TaskStatus, actor: User
-) -> Task:
+def transition_task(db: Session, *, task: Task, to_status: TaskStatus, actor: User) -> Task:
     unfinished = unfinished_dependencies_of(db, task)
     lifecycle.transition(
         db,
@@ -205,9 +201,7 @@ def remove_dependency(
 
 
 def add_comment(db: Session, *, task: Task, body: str, actor: User) -> TaskEvent:
-    event = events.record(
-        db, task=task, actor=actor, event_type=TaskEventType.COMMENTED, body=body
-    )
+    event = events.record(db, task=task, actor=actor, event_type=TaskEventType.COMMENTED, body=body)
     db.flush()
     return event
 

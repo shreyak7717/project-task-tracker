@@ -61,9 +61,7 @@ def engine(_create_test_database: None) -> Iterator[Engine]:
 def db(engine: Engine) -> Iterator[Session]:
     connection = engine.connect()
     transaction = connection.begin()
-    session = Session(
-        bind=connection, autoflush=False, join_transaction_mode="create_savepoint"
-    )
+    session = Session(bind=connection, autoflush=False, join_transaction_mode="create_savepoint")
     try:
         yield session
     finally:

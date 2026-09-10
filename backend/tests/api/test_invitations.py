@@ -73,7 +73,9 @@ def test_accept_creates_a_member_account_and_logs_them_in(client, manager, auth_
 
 
 def test_accept_unknown_token_is_400(client):
-    resp = client.post(ACCEPT, json={"token": "not-real", "full_name": "X", "password": "password123"})
+    resp = client.post(
+        ACCEPT, json={"token": "not-real", "full_name": "X", "password": "password123"}
+    )
     assert resp.status_code == 400
 
 
@@ -101,12 +103,18 @@ def test_a_new_invitation_supersedes_the_pending_one(client, manager, auth_heade
     first = _token_from_url(_invite(client, manager, auth_headers).json()["accept_url"])
     second = _token_from_url(_invite(client, manager, auth_headers).json()["accept_url"])
 
-    assert client.post(
-        ACCEPT, json={"token": first, "full_name": "A", "password": "password123"}
-    ).status_code == 400
-    assert client.post(
-        ACCEPT, json={"token": second, "full_name": "B", "password": "password123"}
-    ).status_code == 201
+    assert (
+        client.post(
+            ACCEPT, json={"token": first, "full_name": "A", "password": "password123"}
+        ).status_code
+        == 400
+    )
+    assert (
+        client.post(
+            ACCEPT, json={"token": second, "full_name": "B", "password": "password123"}
+        ).status_code
+        == 201
+    )
 
 
 def test_accept_when_email_got_registered_meanwhile_is_409(

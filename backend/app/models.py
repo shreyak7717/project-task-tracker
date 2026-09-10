@@ -73,9 +73,7 @@ class Project(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
-    is_archived: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False, index=True
-    )
+    is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

@@ -67,9 +67,7 @@ def test_access_token_is_rejected_at_refresh(client, member):
 
 def test_refresh_token_is_rejected_as_a_bearer_credential(client, member):
     refresh_token = _login(client, "member@example.com").json()["refresh_token"]
-    resp = client.get(
-        "/api/auth/me", headers={"Authorization": f"Bearer {refresh_token}"}
-    )
+    resp = client.get("/api/auth/me", headers={"Authorization": f"Bearer {refresh_token}"})
     assert resp.status_code == 401
 
 

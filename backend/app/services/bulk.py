@@ -37,9 +37,7 @@ def _apply_one(db: Session, *, task, change: BulkChange, actor: User) -> None:
     elif isinstance(change, BulkSetDueDate):
         # Passing due_date explicitly puts it in model_fields_set, so update_task
         # treats None as "clear it" rather than "leave alone".
-        tasks.update_task(
-            db, task=task, data=TaskUpdate(due_date=change.due_date), actor=actor
-        )
+        tasks.update_task(db, task=task, data=TaskUpdate(due_date=change.due_date), actor=actor)
     else:  # pragma: no cover - discriminated union makes this unreachable
         raise ServiceError(f"Unknown bulk change: {change!r}")
 
@@ -60,6 +58,4 @@ def apply_bulk(
             results.append(BulkItemResult(task_id=task_id, ok=False, error=exc.detail))
 
     succeeded = sum(1 for r in results if r.ok)
-    return BulkResult(
-        results=results, succeeded=succeeded, failed=len(results) - succeeded
-    )
+    return BulkResult(results=results, succeeded=succeeded, failed=len(results) - succeeded)

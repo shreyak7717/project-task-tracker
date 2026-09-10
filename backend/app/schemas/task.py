@@ -177,4 +177,3 @@ class BulkResult(BaseModel):
     results: list[BulkItemResult]
     succeeded: int
     failed: int
-

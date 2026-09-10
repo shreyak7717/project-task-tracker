@@ -59,9 +59,7 @@ def list_invitations(
 
 
 @router.get("", response_model=list[UserOut])
-def list_users(
-    db: DbSession, manager: ManagerUser, role: Role | None = None
-) -> list[User]:
+def list_users(db: DbSession, manager: ManagerUser, role: Role | None = None) -> list[User]:
     stmt = select(User).order_by(User.full_name)
     if role is not None:
         stmt = stmt.where(User.role == role)

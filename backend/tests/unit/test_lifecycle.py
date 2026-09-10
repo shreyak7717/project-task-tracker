@@ -59,7 +59,9 @@ def test_blocked_task_cannot_jump_elsewhere(db, make_task, manager):
 
 def test_done_is_refused_while_a_blocking_task_is_unfinished(db, make_task, manager):
     task = make_task(status=S.IN_REVIEW)
-    with pytest.raises(ValidationError, match="blocked by 2 unfinished tasks: Set up CI, Write docs"):
+    with pytest.raises(
+        ValidationError, match="blocked by 2 unfinished tasks: Set up CI, Write docs"
+    ):
         lifecycle.transition(
             db,
             task=task,

@@ -69,18 +69,24 @@ def test_manager_lists_all_projects(client, manager, auth_headers, make_project)
 
 def test_member_gets_404_for_a_project_they_are_not_on(client, member, auth_headers, make_project):
     project = make_project(key="SECRET")
-    assert client.get(f"/api/projects/{project.id}", headers=auth_headers(member)).status_code == 404
+    assert (
+        client.get(f"/api/projects/{project.id}", headers=auth_headers(member)).status_code == 404
+    )
 
 
 def test_member_can_get_a_project_they_are_on(client, member, auth_headers, make_project):
     project = make_project(key="OPEN", members=(member,))
-    assert client.get(f"/api/projects/{project.id}", headers=auth_headers(member)).status_code == 200
+    assert (
+        client.get(f"/api/projects/{project.id}", headers=auth_headers(member)).status_code == 200
+    )
 
 
 # --- archiving -------------------------------------------------------
 
 
-def test_archived_projects_are_hidden_from_the_default_list(client, manager, auth_headers, make_project):
+def test_archived_projects_are_hidden_from_the_default_list(
+    client, manager, auth_headers, make_project
+):
     make_project(key="LIVE")
     make_project(key="OLD", archived=True)
 
@@ -121,22 +127,30 @@ def test_adding_a_member_grants_them_visibility_removing_revokes_it(
     client, manager, member, auth_headers, make_project
 ):
     project = make_project(key="TEAM")
-    assert client.get(f"/api/projects/{project.id}", headers=auth_headers(member)).status_code == 404
+    assert (
+        client.get(f"/api/projects/{project.id}", headers=auth_headers(member)).status_code == 404
+    )
 
     added = client.put(
         f"/api/projects/{project.id}/members/{member.id}", headers=auth_headers(manager)
     )
     assert added.status_code == 200
-    assert client.get(f"/api/projects/{project.id}", headers=auth_headers(member)).status_code == 200
+    assert (
+        client.get(f"/api/projects/{project.id}", headers=auth_headers(member)).status_code == 200
+    )
 
     removed = client.delete(
         f"/api/projects/{project.id}/members/{member.id}", headers=auth_headers(manager)
     )
     assert removed.status_code == 204
-    assert client.get(f"/api/projects/{project.id}", headers=auth_headers(member)).status_code == 404
+    assert (
+        client.get(f"/api/projects/{project.id}", headers=auth_headers(member)).status_code == 404
+    )
 
 
-def test_the_owner_cannot_be_removed_from_their_project(client, manager, auth_headers, make_project):
+def test_the_owner_cannot_be_removed_from_their_project(
+    client, manager, auth_headers, make_project
+):
     project = make_project(key="OWN")  # owner defaults to the manager
     resp = client.delete(
         f"/api/projects/{project.id}/members/{manager.id}", headers=auth_headers(manager)
@@ -144,7 +158,9 @@ def test_the_owner_cannot_be_removed_from_their_project(client, manager, auth_he
     assert resp.status_code == 400
 
 
-def test_a_member_cannot_manage_membership(client, manager, member, make_user, auth_headers, make_project):
+def test_a_member_cannot_manage_membership(
+    client, manager, member, make_user, auth_headers, make_project
+):
     project = make_project(key="TEAM", members=(member,))
     other = make_user(email="other@example.com")
     resp = client.put(
