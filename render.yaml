@@ -8,11 +8,12 @@ services:
     plan: free
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    # Migrations and the initial-manager seed run on every deploy; both are
-    # idempotent.
+    # Migrations, the initial-manager seed, and the demo-data seed run on every
+    # deploy; all three are idempotent (seed_demo exits early once WEBAPP exists).
     startCommand: >-
       alembic upgrade head &&
       python -m app.seed &&
+      python -m app.seed_demo &&
       uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
