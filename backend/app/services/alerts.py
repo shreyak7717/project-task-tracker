@@ -1,10 +1,13 @@
 """Overdue alerts and their per-user dismissal (brief goal 10).
 
-An alert is a task that is past its due date and not done, in one of the
-caller's visible projects, that this caller has not dismissed *at the task's
-current due date*. Because the dismissal stores the due date it was made
-against, changing a task's due date makes the stored value stop matching and
-the alert reappears.
+An alert is a task that is past its due date and not done, that this caller
+has not dismissed *at the task's current due date*. A manager sees every such
+task across the whole visible portfolio (their badge is a portfolio-wide
+signal); a member only sees alerts for tasks assigned to them specifically —
+narrower than "projects I'm on", since dismissal already required assignment
+and a member seeing alerts they can't act on was more noise than signal.
+Because the dismissal stores the due date it was made against, changing a
+task's due date makes the stored value stop matching and the alert reappears.
 
 All date comparisons use one UTC reference supplied by the caller (the router),
 never the database session clock.
@@ -23,7 +26,7 @@ from app.enums import TaskStatus
 from app.models import AlertDismissal, Task, TaskAssignee, User
 from app.services.errors import PermissionDeniedError, ValidationError
 from app.services.tasks import get_visible_task_or_404
-from app.services.visibility import task_visibility_clause
+from app.services.visibility import is_manager, task_visibility_clause
 
 
 def _today(today: date | None) -> date:
@@ -45,6 +48,10 @@ def _active_alerts(db: Session, viewer: User, today: date) -> Select:
     visible = task_visibility_clause(db, viewer)
     if visible is not None:
         stmt = stmt.where(visible)
+    if not is_manager(viewer):
+        stmt = stmt.where(
+            Task.id.in_(select(TaskAssignee.task_id).where(TaskAssignee.user_id == viewer.id))
+        )
     return stmt
 
 
@@ -52,7 +59,7 @@ def list_alerts(db: Session, *, viewer: User, today: date | None = None) -> list
     today = _today(today)
     stmt = (
         _active_alerts(db, viewer, today)
-        .options(selectinload(Task.project))
+        .options(selectinload(Task.project), selectinload(Task.assignees))
         .order_by(Task.due_date, Task.id)
     )
     return list(db.scalars(stmt))

@@ -17,6 +17,7 @@ class AlertItem(BaseModel):
     priority: TaskPriority
     due_date: date
     days_overdue: int
+    assigned_to_me: bool
 
 
 class AlertsOut(BaseModel):

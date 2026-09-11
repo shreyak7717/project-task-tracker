@@ -6,10 +6,13 @@ import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/common
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { api, ApiError } from '@/lib/api'
+import { useAuth } from '@/lib/auth'
 import { PRIORITY_LABEL, formatDate } from '@/lib/format'
 import type { AlertsResponse } from '@/types'
 
 export function AlertsPage() {
+  const { user } = useAuth()
+  const isManager = user?.role === 'manager'
   const qc = useQueryClient()
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['alerts'],
@@ -70,14 +73,18 @@ export function AlertsPage() {
                     {a.days_overdue} day{a.days_overdue === 1 ? '' : 's'}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={dismiss.isPending}
-                      onClick={() => dismiss.mutate(a.id)}
-                    >
-                      Dismiss
-                    </Button>
+                    {a.assigned_to_me ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={dismiss.isPending}
+                        onClick={() => dismiss.mutate(a.id)}
+                      >
+                        Dismiss
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Not yours</span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

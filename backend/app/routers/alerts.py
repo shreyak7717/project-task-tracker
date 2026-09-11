@@ -32,6 +32,7 @@ def list_alerts(db: DbSession, user: CurrentUser) -> AlertsOut:
             priority=task.priority,
             due_date=task.due_date,
             days_overdue=(today - task.due_date).days,
+            assigned_to_me=any(a.user_id == user.id for a in task.assignees),
         )
         for task in tasks
     ]

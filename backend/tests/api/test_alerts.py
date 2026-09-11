@@ -45,7 +45,7 @@ def test_overdue_unfinished_tasks_appear_as_alerts(
     assert body["items"][0]["days_overdue"] == 2
 
 
-def test_alerts_are_scoped_to_visible_projects(
+def test_manager_sees_every_overdue_task_across_visible_projects(
     client, manager, member, auth_headers, make_project, make_task, db
 ):
     mine = make_project(key="MINE", members=(member,))
@@ -54,11 +54,47 @@ def test_alerts_are_scoped_to_visible_projects(
     make_task(project=other, status=S.BACKLOG, due_date=_due(-1), title="other")
     db.flush()
 
-    assert {i["title"] for i in _alerts(client, auth_headers(member))["items"]} == {"mine"}
+    # Unassigned tasks and all — a manager's alerts are the whole portfolio.
     assert {i["title"] for i in _alerts(client, auth_headers(manager))["items"]} == {
         "mine",
         "other",
     }
+
+
+def test_member_only_sees_alerts_for_tasks_assigned_to_them(
+    client, manager, member, auth_headers, make_project, make_task, db
+):
+    p = make_project(members=(member,))
+    theirs = make_task(project=p, status=S.BACKLOG, due_date=_due(-1), title="theirs")
+    make_task(project=p, status=S.BACKLOG, due_date=_due(-1), title="unassigned")
+    db.flush()
+    _assign(db, theirs, member)
+
+    # Being a project member isn't enough on its own anymore - being on the
+    # project but unassigned to a given task no longer surfaces its alert.
+    assert {i["title"] for i in _alerts(client, auth_headers(member))["items"]} == {"theirs"}
+    assert {i["title"] for i in _alerts(client, auth_headers(manager))["items"]} == {
+        "theirs",
+        "unassigned",
+    }
+
+
+def test_assigned_to_me_flags_which_alerts_the_manager_can_dismiss(
+    client, manager, member, auth_headers, make_project, make_task, db
+):
+    """A manager's alert list is portfolio-wide, so unlike a member's (which is
+    already narrowed to their own assignments) this flag still does real work
+    for a manager choosing which rows to act on."""
+    p = make_project(members=(member,))
+    managers_task = make_task(project=p, status=S.BACKLOG, due_date=_due(-1), title="managers")
+    members_task = make_task(project=p, status=S.BACKLOG, due_date=_due(-1), title="members")
+    db.flush()
+    _assign(db, managers_task, manager)
+    _assign(db, members_task, member)
+
+    items = {i["title"]: i for i in _alerts(client, auth_headers(manager))["items"]}
+    assert items["managers"]["assigned_to_me"] is True
+    assert items["members"]["assigned_to_me"] is False
 
 
 def test_dismiss_requires_being_assigned(
