@@ -60,8 +60,7 @@ I would focus on hardening the parts that are currently application-level rather
 1. Add database-level protection for the append-only task event log.
 2. Add full graph-based dependency-cycle detection for multi-hop dependency chains.
 3. Add refresh-token revocation so sessions can be explicitly invalidated.
-4. Add proper invitation email delivery instead of exposing/logging invitation links.
-5. Add rate limiting for login and invitation acceptance endpoints.
+4. Add rate limiting for login and invitation acceptance endpoints.
 
 I would prioritize these over adding more UI features because the core product requirements are already implemented.
 

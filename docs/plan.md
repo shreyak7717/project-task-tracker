@@ -46,48 +46,18 @@ is real so I'm not rebuilding against a moving contract.
 
 ## Post-completion fixes
 
-after the plan above was "done" and the app was actually live on
-Vercel + Render — testing the real deployment (not just local) surfaced a
-handful of gaps that only show up once you're clicking through it as a real
-user would. Fixed in order found:
+after the plan above was "done" and the app was actually live on Vercel + Render — testing the real deployment (not just local) surfaced a handful of gaps that only show up once you're clicking through it as a real user would. Fixed in order found:
 
-- **Invite-link dialog overflowing its box.** A long accept-invite URL blew
-  past the dialog's width — a flex child needs `min-w-0` to truncate, but
-  the dialog's own grid container needed the same fix first. Fixed in
-  `dialog.tsx` (`grid-cols-1`), so every dialog in the app is covered, not
-  just this one.
-- **Archiving was purely cosmetic.** Reversed the original design (archive
-  only hid a project from lists) to **Decision 14**: archiving now freezes
-  task mutations — create/transition/assign/edit all 409; comments and
-  dependencies stay open. One shared `ensure_project_active()` check, so
-  bulk actions inherit it too.
-- **Task lists didn't reflect the new freeze.** An archived-project task
-  looked ordinary until a mutation 409'd. Task lists gained the same
-  `include_archived` toggle Projects already had, plus an "Archived"
-  badge — a follow-on UI fix, not its own numbered decision.
-- **Dashboard read as personal when it was team-wide.** "Your portfolio at a
-  glance" implied your work, but every number was team-wide. **Decision
-  15**: added an opt-in "My work" scope (`?scope=mine`), reusing the same
-  visibility-filter pattern.
-- **Saving a task gave no feedback.** "Save changes" completed silently.
-  Added success toasts (`Task updated`, `Status updated`, etc.) matching
-  the confirmation pattern already used elsewhere in the app.
-- **Dashboard still counted frozen work.** The task-list fix didn't reach
-  the dashboard's separate query path. Now unconditionally excludes
-  archived-project tasks too — no toggle needed there.
-- **Alerts offered Dismiss on rows you couldn't act on.** Portfolio-wide by
-  design, but Dismiss was enabled on every row regardless of assignment,
-  403ing silently. The API now flags `assigned_to_me`; the frontend only
-  shows Dismiss when true — folded into Decision 16 below.
-- **A member's alert list was mostly noise.** Once "Not yours" made it
-  visible, most of a member's list was rows they couldn't act on.
-  **Decision 16**: members now see only their own assigned alerts;
-  managers keep the full portfolio view — a partial reversal of the
-  original design.
-- **UI polish pass**, once everything worked end-to-end: a branded login
-  page, the same brand mark carried into the sidebar/header, icon badges
-  on the dashboard's stats, and colored initials avatars on Projects/Team
-  (shared `avatarColor()`/`initials()` helpers).
+- **Invite-link dialog overflowing its box.** A long accept-invite URL blew past the dialog's width — a flex child needs `min-w-0` to truncate, but the dialog's own grid container needed the same fix first. Fixed in `dialog.tsx` (`grid-cols-1`), so every dialog in the app is covered, not just this one.
+- **Archiving was purely cosmetic.** Reversed the original design (archive only hid a project from lists) to **Decision 14**: archiving now freezes task mutations — create/transition/assign/edit all 409; comments and dependencies stay open. One shared `ensure_project_active()` check, so bulk actions inherit it too.
+- **Task lists didn't reflect the new freeze.** An archived-project task looked ordinary until a mutation 409'd. Task lists gained the same `include_archived` toggle Projects already had, plus an "Archived" badge — a follow-on UI fix, not its own numbered decision.
+- **Dashboard read as personal when it was team-wide.** "Your portfolio at a glance" implied your work, but every number was team-wide. **Decision 15**: added an opt-in "My work" scope (`?scope=mine`), reusing the same visibility-filter pattern.
+- **Saving a task gave no feedback.** "Save changes" completed silently. Added success toasts (`Task updated`, `Status updated`, etc.) matching the confirmation pattern already used elsewhere in the app.
+- **Dashboard still counted frozen work.** The task-list fix didn't reach the dashboard's separate query path. Now unconditionally excludes archived-project tasks too — no toggle needed there.
+- **Alerts offered Dismiss on rows you couldn't act on.** Portfolio-wide by design, but Dismiss was enabled on every row regardless of assignment, 403ing silently. The API now flags `assigned_to_me`; the frontend only shows Dismiss when true — folded into Decision 16 below.
+- **A member's alert list was mostly noise.** Once "Not yours" made it visible, most of a member's list was rows they couldn't act on. **Decision 16**: members now see only their own assigned alerts; managers keep the full portfolio view — a partial reversal of the original design.
+- **UI polish pass**, once everything worked end-to-end: a branded login page, the same brand mark carried into the sidebar/header, icon badges on the dashboard's stats, and colored initials avatars on Projects/Team (shared `avatarColor()`/`initials()` helpers).
+- **Invitations were never actually delivered.** The accept link only ever showed up in the API response — nothing was emailed. Tried Resend first (its zero-setup shared sender needs no domain), but its shared sender only delivers to the account owner's own address, not arbitrary recipients — no good for actually inviting someone. Switched to SendGrid (single-sender verification: verify one email you own, then send to anyone). Email is strictly best-effort — the invitation is committed to the DB before any send is attempted, so a missing key or a provider outage never affects invitation creation or acceptance; `accept_url` keeps being returned either way, same as before.
 
 See `decisions.md` for the full reasoning behind each of these.
 
@@ -109,7 +79,6 @@ acceptable for this scope, but worth naming plainly if asked.
 ## What was cut / deferred
 
 - Refresh-token revocation (documented trade-off).
-- Real email delivery of invitations — dev returns/logs the accept URL.
 - Rate limiting on login and invite-accept — known gap.
 - Per-project task reference numbers.
 - Multi-hop dependency cycle detection — only the direct A↔B case is caught

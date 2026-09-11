@@ -229,6 +229,20 @@ The UI issues were traced to the affected dialog/layout and the TypeScript build
 
 I iterated on the UI rather than treating the initial frontend implementation as finished. The dialog overflow was fixed, the build error was addressed, and the frontend was redeployed and tested again.
 
+## Send real invitation emails instead of just a link in a dialog
+
+### Prompt
+
+"I want to implement actually sending an email to a project member instead of just a URL being shown in the dialog box."
+
+### What you got
+
+A best-effort email-sending design: the invitation is committed to the database before any send is attempted, so a missing provider key or a delivery failure never affects invitation creation or the accept flow — `accept_url` keeps being returned in every response either way. First implemented against Resend, chosen for its zero-setup shared sender (no domain verification needed).
+
+### What you corrected
+
+Testing it against a friend's real email failed — Resend's shared sender only delivers to the email address the Resend account itself is registered under, not arbitrary recipients. I rejected that provider and switched to SendGrid, which verifies a single sender email instead and then allows sending to anyone. The switch only touched the provider-specific details (endpoint, auth, payload shape); the best-effort design itself didn't need to change.
+
 ## Summary
 
 The most useful AI interactions were not simply "generate this file" prompts. The important pattern was:
@@ -236,3 +250,4 @@ The most useful AI interactions were not simply "generate this file" prompts. Th
 plan → implement → question the design → test → find an inconsistency → correct it → update the documentation.
 
 The AI's first answer was not always treated as authoritative. The initial six-session roadmap was later changed, the original archive semantics were reversed after testing, and the member alert scope was revised after testing different users. These corrections were kept as part of the engineering history rather than hidden.
+

@@ -139,3 +139,13 @@ Rejected: keeping the original member behavior — every overdue task in a membe
 Why: live testing surfaced the actual cost of the original design: a member's list was mostly tasks they had no way to act on, and the frontend offered a Dismiss button on all of them anyway, which just 403'd silently when clicked. Once the UI was fixed to show which rows were actually dismissible, it became clear a member's overdue list should just be their own work — a manager still needs the portfolio view for cross-team visibility, but a member doesn't have an equivalent need for it.
 
 Later reversed: yes — the original portfolio-wide member scope (same reasoning as the Dashboard's team-wide default) was narrowed to assignment-only for members after live testing.
+
+Decision 17 — Invitation email: best-effort SendGrid, chosen after Resend didn't fit
+
+Chose: real invitation email via SendGrid's HTTP API. Sending is strictly best-effort — the invitation is already committed to the database before any send is attempted, so a missing API key or a provider failure never affects invitation creation or the accept flow. accept_url keeps being returned in every response regardless, exactly as before email existed.
+
+Rejected: Resend, tried first for its zero-setup shared sender (onboarding@resend.dev, no domain verification needed) — but that shared sender can only deliver to the email address the Resend account itself is registered under, not arbitrary recipients, which doesn't work for actually inviting someone else.
+
+Why: SendGrid's single-sender-verification model (verify one email you own, then send to any recipient) matches what an invitation flow actually needs. Keeping the send best-effort and after the commit was non-negotiable — email delivery is inherently unreliable (keys expire, providers have outages), and none of that should ever be able to corrupt or block invitation state.
+
+Later reversed: yes — Resend was the first choice and was replaced by SendGrid once its recipient restriction was discovered during manual testing.
