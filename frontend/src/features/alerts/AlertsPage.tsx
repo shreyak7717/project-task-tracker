@@ -36,7 +36,11 @@ export function AlertsPage() {
     <div>
       <PageHeader
         title="Overdue alerts"
-        description="Tasks past their due date that aren't done, in projects you can see"
+        description={
+          isManager
+            ? "Every overdue task in projects you can see"
+            : "Overdue tasks assigned to you"
+        }
       />
       {isLoading && <Loading />}
       {error && <ErrorState error={error} retry={() => void refetch()} />}
@@ -93,8 +97,8 @@ export function AlertsPage() {
         </div>
       )}
       <p className="mt-3 text-xs text-muted-foreground">
-        You can only dismiss alerts for tasks assigned to you. If a task's due date changes later,
-        its alert comes back.
+        {isManager && 'You can only dismiss alerts for tasks assigned to you. '}
+        If a task's due date changes later, its alert comes back.
       </p>
     </div>
   )
