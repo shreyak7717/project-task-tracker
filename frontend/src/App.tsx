@@ -10,6 +10,7 @@ import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
 import { TaskDetailPage } from '@/features/tasks/TaskDetailPage'
 import { TaskListPage } from '@/features/tasks/TaskListPage'
+import { TeamPage } from '@/features/team/TeamPage'
 
 export default function App() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
         <Route path="/alerts" element={<AlertsPage />} />
+        <Route path="/team" element={<TeamPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

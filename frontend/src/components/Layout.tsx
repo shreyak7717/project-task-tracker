@@ -7,6 +7,7 @@ import {
   LogOut,
   Menu,
   UserRound,
+  Users,
 } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
@@ -29,6 +30,7 @@ const NAV = [
   { to: '/tasks', label: 'All Tasks', icon: ListTodo, end: true },
   { to: '/projects', label: 'Projects', icon: FolderKanban },
   { to: '/alerts', label: 'Alerts', icon: Bell, badge: true },
+  { to: '/team', label: 'Team', icon: Users, managerOnly: true },
 ]
 
 function AlertBadge() {
@@ -46,28 +48,31 @@ function AlertBadge() {
 }
 
 function NavItems({ onNavigate }: { onNavigate?: () => void }) {
+  const { user } = useAuth()
   return (
     <nav className="flex flex-col gap-1">
-      {NAV.map(({ to, label, icon: Icon, end, badge }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          onClick={onNavigate}
-          className={({ isActive }) =>
-            cn(
-              'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-              isActive
-                ? 'bg-primary/10 text-primary'
-                : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-            )
-          }
-        >
-          <Icon className="size-4" />
-          {label}
-          {badge && <AlertBadge />}
-        </NavLink>
-      ))}
+      {NAV.filter((item) => !item.managerOnly || user?.role === 'manager').map(
+        ({ to, label, icon: Icon, end, badge }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            onClick={onNavigate}
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                isActive
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+              )
+            }
+          >
+            <Icon className="size-4" />
+            {label}
+            {badge && <AlertBadge />}
+          </NavLink>
+        ),
+      )}
     </nav>
   )
 }
