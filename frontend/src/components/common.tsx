@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ApiError } from '@/lib/api'
-import { STATUS_CLASS, STATUS_LABEL } from '@/lib/format'
+import { avatarColor, initials, STATUS_CLASS, STATUS_LABEL } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { TaskStatus } from '@/types'
 
@@ -24,6 +24,45 @@ export function PageHeader({
         {description && <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>}
       </div>
       {action}
+    </div>
+  )
+}
+
+export function AvatarStack({
+  people,
+  max = 4,
+}: {
+  people: { id: string; full_name: string }[]
+  max?: number
+}) {
+  if (people.length === 0) return <span className="text-muted-foreground">—</span>
+  const shown = people.slice(0, max)
+  const overflow = people.length - shown.length
+  return (
+    <div className="flex -space-x-2">
+      {shown.map((p) => (
+        <span
+          key={p.id}
+          title={p.full_name}
+          className={cn(
+            'grid size-6 shrink-0 place-items-center rounded-full border-2 border-background text-[10px] font-bold',
+            avatarColor(p.full_name),
+          )}
+        >
+          {initials(p.full_name)}
+        </span>
+      ))}
+      {overflow > 0 && (
+        <span
+          title={people
+            .slice(max)
+            .map((p) => p.full_name)
+            .join(', ')}
+          className="grid size-6 shrink-0 place-items-center rounded-full border-2 border-background bg-muted text-[10px] font-medium text-muted-foreground"
+        >
+          +{overflow}
+        </span>
+      )}
     </div>
   )
 }

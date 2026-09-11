@@ -47,10 +47,21 @@ function AlertBadge() {
   )
 }
 
+function Brand() {
+  return (
+    <div className="mb-6 flex items-center gap-2 px-2 text-lg font-semibold tracking-tight">
+      <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+        <LayoutDashboard className="size-4.5" />
+      </span>
+      Task Tracker
+    </div>
+  )
+}
+
 function NavItems({ onNavigate }: { onNavigate?: () => void }) {
   const { user } = useAuth()
   return (
-    <nav className="flex flex-col gap-1">
+    <nav className="flex flex-col gap-0.5">
       {NAV.filter((item) => !item.managerOnly || user?.role === 'manager').map(
         ({ to, label, icon: Icon, end, badge }) => (
           <NavLink
@@ -60,9 +71,9 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-primary/10 text-primary'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:bg-accent hover:text-foreground',
               )
             }
@@ -84,7 +95,7 @@ export function Layout() {
   return (
     <div className="flex min-h-screen bg-background">
       <aside className="hidden w-60 shrink-0 flex-col border-r bg-sidebar p-4 md:flex">
-        <div className="mb-6 px-2 text-lg font-semibold">Task Tracker</div>
+        <Brand />
         <NavItems />
       </aside>
 
@@ -94,15 +105,15 @@ export function Layout() {
             className="absolute inset-0 bg-black/50"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="absolute left-0 top-0 flex h-full w-64 flex-col border-r bg-sidebar p-4">
-            <div className="mb-6 px-2 text-lg font-semibold">Task Tracker</div>
+          <aside className="absolute left-0 top-0 flex h-full w-64 flex-col border-r bg-sidebar p-4 shadow-xl">
+            <Brand />
             <NavItems onNavigate={() => setMobileOpen(false)} />
           </aside>
         </div>
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center gap-3 border-b px-4">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <button
             className="rounded-md p-1.5 hover:bg-accent md:hidden"
             onClick={() => setMobileOpen(true)}
@@ -112,7 +123,7 @@ export function Layout() {
           </button>
           <div className="ml-auto">
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent">
+              <DropdownMenuTrigger className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm transition-colors hover:bg-accent">
                 <span className="grid size-7 place-items-center rounded-full bg-primary/10 text-primary">
                   <UserRound className="size-4" />
                 </span>

@@ -57,6 +57,32 @@ export function formatDateTime(iso: string): string {
   })
 }
 
+const AVATAR_PALETTE = [
+  'bg-blue-500/15 text-blue-700 dark:text-blue-300',
+  'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+  'bg-amber-500/15 text-amber-800 dark:text-amber-300',
+  'bg-violet-500/15 text-violet-700 dark:text-violet-300',
+  'bg-rose-500/15 text-rose-700 dark:text-rose-300',
+  'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300',
+]
+
+/** A stable color pulled from a small palette, keyed by a string (project key,
+ * person's name) — same input always gets the same color, so avatars stay
+ * recognizable across the app without needing per-record color storage. */
+export function avatarColor(seed: string): string {
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
+  return AVATAR_PALETTE[hash % AVATAR_PALETTE.length]
+}
+
+export function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  const first = parts[0][0]
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : ''
+  return (first + last).toUpperCase()
+}
+
 export function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
   const mins = Math.round(diff / 60000)

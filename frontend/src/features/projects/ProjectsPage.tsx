@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { CalendarDays, UserRound } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
@@ -31,7 +32,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { api, ApiError } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
-import { formatDate } from '@/lib/format'
+import { avatarColor, formatDate } from '@/lib/format'
 import type { Project, User } from '@/types'
 
 const schema = z.object({
@@ -171,12 +172,11 @@ export function ProjectsPage() {
       {error && <ErrorState error={error} retry={() => void refetch()} />}
       {data && data.length === 0 && <EmptyState message="No projects yet." />}
       {data && data.length > 0 && (
-        <div className="rounded-lg border">
+        <div className="rounded-xl border shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Key</TableHead>
-                <TableHead>Name</TableHead>
+                <TableHead>Project</TableHead>
                 <TableHead>Owner</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead />
@@ -185,19 +185,38 @@ export function ProjectsPage() {
             <TableBody>
               {data.map((p) => (
                 <TableRow key={p.id}>
-                  <TableCell className="font-mono text-xs">{p.key}</TableCell>
                   <TableCell>
-                    <Link to={`/projects/${p.id}`} className="font-medium hover:underline">
-                      {p.name}
-                    </Link>
-                    {p.is_archived && (
-                      <Badge variant="secondary" className="ml-2">
-                        Archived
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`grid size-9 shrink-0 place-items-center rounded-lg text-xs font-bold ${avatarColor(p.key)}`}
+                      >
+                        {p.key.slice(0, 2)}
+                      </span>
+                      <div>
+                        <Link to={`/projects/${p.id}`} className="font-medium hover:underline">
+                          {p.name}
+                        </Link>
+                        {p.is_archived && (
+                          <Badge variant="secondary" className="ml-2">
+                            Archived
+                          </Badge>
+                        )}
+                        <div className="font-mono text-xs text-muted-foreground">{p.key}</div>
+                      </div>
+                    </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{p.owner.full_name}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatDate(p.created_at)}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <UserRound className="size-3.5" />
+                      {p.owner.full_name}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <CalendarDays className="size-3.5" />
+                      {formatDate(p.created_at)}
+                    </span>
+                  </TableCell>
                   <TableCell className="text-right">
                     {isManager && (
                       <Button

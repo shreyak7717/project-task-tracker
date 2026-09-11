@@ -180,7 +180,7 @@ export function TaskListPage({ mine = false }: { mine?: boolean }) {
 
       {data && rows.length > 0 && (
         <>
-          <div className="rounded-lg border">
+          <div className="rounded-xl border shadow-sm">
             <Table>
               <TableHeader>
                 <TableRow>

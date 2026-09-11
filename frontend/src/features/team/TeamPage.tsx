@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Copy } from 'lucide-react'
+import { Copy, Mail, UsersRound } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { api, ApiError } from '@/lib/api'
-import { formatDate } from '@/lib/format'
+import { avatarColor, formatDate, initials } from '@/lib/format'
 import type { Invitation, InvitationCreated, User } from '@/types'
 
 const schema = z.object({ email: z.string().email('Enter a valid email') })
@@ -127,7 +127,7 @@ export function TeamPage() {
       {isLoading && <Loading />}
       {error && <ErrorState error={error} retry={() => void refetch()} />}
       {users && (
-        <div className="mb-6 rounded-lg border">
+        <div className="mb-6 rounded-xl border shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
@@ -140,7 +140,16 @@ export function TeamPage() {
             <TableBody>
               {users.map((u) => (
                 <TableRow key={u.id}>
-                  <TableCell className="font-medium">{u.full_name}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold ${avatarColor(u.full_name)}`}
+                      >
+                        {initials(u.full_name)}
+                      </span>
+                      {u.full_name}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{u.email}</TableCell>
                   <TableCell>
                     <Badge variant={u.role === 'manager' ? 'default' : 'secondary'}>
@@ -155,10 +164,18 @@ export function TeamPage() {
         </div>
       )}
 
-      <h2 className="mb-2 text-sm font-medium text-muted-foreground">Pending invitations</h2>
+      <h2 className="mb-2 flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+        <UsersRound className="size-4" />
+        Pending invitations
+        {invitations && invitations.length > 0 && (
+          <Badge variant="secondary" className="ml-0.5">
+            {invitations.length}
+          </Badge>
+        )}
+      </h2>
       {invitations && invitations.length === 0 && <EmptyState message="No pending invitations." />}
       {invitations && invitations.length > 0 && (
-        <div className="rounded-lg border">
+        <div className="rounded-xl border shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
@@ -170,7 +187,12 @@ export function TeamPage() {
             <TableBody>
               {invitations.map((inv) => (
                 <TableRow key={inv.id}>
-                  <TableCell>{inv.email}</TableCell>
+                  <TableCell>
+                    <span className="flex items-center gap-1.5">
+                      <Mail className="size-3.5 text-muted-foreground" />
+                      {inv.email}
+                    </span>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDate(inv.created_at)}
                   </TableCell>
