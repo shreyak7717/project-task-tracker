@@ -87,7 +87,7 @@ function InviteDialog() {
               this link with them (expires {formatDate(created.expires_at)}):
             </p>
             <div className="flex items-center gap-2 rounded-md border bg-muted p-2 text-xs">
-              <span className="flex-1 truncate">{created.accept_url}</span>
+              <span className="min-w-0 flex-1 truncate">{created.accept_url}</span>
               <button
                 onClick={() => {
                   void navigator.clipboard.writeText(created.accept_url)
