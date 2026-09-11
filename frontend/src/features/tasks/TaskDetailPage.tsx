@@ -47,13 +47,19 @@ export function TaskDetailPage() {
   const patch = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
       api<TaskDetail>(`/api/tasks/${taskId}`, { method: 'PATCH', body }),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      toast.success('Task updated')
+      invalidate()
+    },
     onError,
   })
   const transition = useMutation({
     mutationFn: (to_status: string) =>
       api(`/api/tasks/${taskId}/transition`, { method: 'POST', body: { to_status } }),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      toast.success('Status updated')
+      invalidate()
+    },
     onError,
   })
   const removeTask = useMutation({
@@ -67,7 +73,10 @@ export function TaskDetailPage() {
   const setAssignees = useMutation({
     mutationFn: (user_ids: string[]) =>
       api(`/api/tasks/${taskId}/assignees`, { method: 'PUT', body: { user_ids } }),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      toast.success('Assignees updated')
+      invalidate()
+    },
     onError,
   })
   const addDep = useMutation({
@@ -76,13 +85,19 @@ export function TaskDetailPage() {
         method: 'POST',
         body: { depends_on_task_id },
       }),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      toast.success('Dependency added')
+      invalidate()
+    },
     onError,
   })
   const removeDep = useMutation({
     mutationFn: (depId: string) =>
       api(`/api/tasks/${taskId}/dependencies/${depId}`, { method: 'DELETE' }),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      toast.success('Dependency removed')
+      invalidate()
+    },
     onError,
   })
 
