@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import {
   Bar,
   BarChart,
@@ -13,10 +14,13 @@ import {
 } from 'recharts'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ErrorState, Loading, PageHeader } from '@/components/common'
 import { api } from '@/lib/api'
 import { STATUS_LABEL } from '@/lib/format'
 import type { Dashboard } from '@/types'
+
+type Scope = 'team' | 'mine'
 
 const CHART_COLORS = ['#4f7ce6', '#4fc48a', '#d8a13a', '#d76a3a', '#9b6fd8']
 
@@ -32,14 +36,27 @@ function Stat({ label, value, tone }: { label: string; value: number; tone?: str
 }
 
 export function DashboardPage() {
+  const [scope, setScope] = useState<Scope>('team')
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['dashboard'],
-    queryFn: () => api<Dashboard>('/api/dashboard'),
+    queryKey: ['dashboard', scope],
+    queryFn: () =>
+      api<Dashboard>('/api/dashboard', { params: { scope: scope === 'mine' ? 'mine' : undefined } }),
   })
 
   return (
     <div>
-      <PageHeader title="Dashboard" description="Your portfolio at a glance" />
+      <PageHeader
+        title="Dashboard"
+        description={scope === 'mine' ? 'Just your assigned work' : 'Every project you can see'}
+        action={
+          <Tabs value={scope} onValueChange={(v) => setScope(v as Scope)}>
+            <TabsList>
+              <TabsTrigger value="team">Team</TabsTrigger>
+              <TabsTrigger value="mine">My work</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        }
+      />
       {isLoading && <Loading rows={6} />}
       {error && <ErrorState error={error} retry={() => void refetch()} />}
       {data && (
@@ -55,7 +72,7 @@ export function DashboardPage() {
             <Stat label="Completed this week" value={data.headline.completed_this_week} />
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className={scope === 'mine' ? 'grid gap-4' : 'grid gap-4 lg:grid-cols-2'}>
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm">Tasks by status</CardTitle>
@@ -82,27 +99,32 @@ export function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Open tasks by assignee</CardTitle>
-              </CardHeader>
-              <CardContent className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    layout="vertical"
-                    data={data.by_assignee
-                      .slice(0, 8)
-                      .map((a) => ({ name: a.user?.full_name ?? 'Unassigned', count: a.count }))}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                    <XAxis type="number" allowDecimals={false} fontSize={12} />
-                    <YAxis type="category" dataKey="name" width={110} fontSize={12} />
-                    <Tooltip />
-                    <Bar dataKey="count" fill={CHART_COLORS[0]} radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            {/* Doesn't mean much under "My work" — it would show co-assignees
+                on your shared tasks rather than being "about you", so it's
+                only shown for the team-wide view. */}
+            {scope === 'team' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Open tasks by assignee</CardTitle>
+                </CardHeader>
+                <CardContent className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      layout="vertical"
+                      data={data.by_assignee
+                        .slice(0, 8)
+                        .map((a) => ({ name: a.user?.full_name ?? 'Unassigned', count: a.count }))}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                      <XAxis type="number" allowDecimals={false} fontSize={12} />
+                      <YAxis type="category" dataKey="name" width={110} fontSize={12} />
+                      <Tooltip />
+                      <Bar dataKey="count" fill={CHART_COLORS[0]} radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           <Card>

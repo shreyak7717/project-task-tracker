@@ -8,8 +8,9 @@ from app.enums import TaskStatus as S
 from app.models import TaskAssignee
 
 
-def _dashboard(client, headers) -> dict:
-    return client.get("/api/dashboard", headers=headers).json()
+def _dashboard(client, headers, *, scope: str | None = None) -> dict:
+    params = {"scope": scope} if scope else {}
+    return client.get("/api/dashboard", headers=headers, params=params).json()
 
 
 def _days_ago(n: int) -> datetime:
@@ -110,3 +111,47 @@ def test_dashboard_is_scoped_to_visible_projects(
 
     assert _dashboard(client, auth_headers(member))["headline"]["open"] == 1
     assert _dashboard(client, auth_headers(manager))["headline"]["open"] == 3
+
+
+def test_default_scope_is_every_visible_task_unchanged(
+    client, manager, auth_headers, make_project, make_task, db
+):
+    """Omitting `scope` (and passing `scope=team` explicitly) behaves exactly
+    like today, before this param existed."""
+    p = make_project()
+    make_task(project=p, status=S.BACKLOG)
+    make_task(project=p, status=S.IN_PROGRESS)
+    db.flush()
+
+    no_param = _dashboard(client, auth_headers(manager))
+    explicit_team = _dashboard(client, auth_headers(manager), scope="team")
+    assert no_param["headline"]["open"] == 2
+    assert explicit_team == no_param
+
+
+def test_scope_mine_restricts_to_the_callers_own_assigned_tasks(
+    client, manager, member, auth_headers, make_project, make_task, db
+):
+    p = make_project(key="MINE", members=(member,))
+    mine_task = make_task(project=p, status=S.BACKLOG, title="assigned to member")
+    other_task = make_task(project=p, status=S.BACKLOG, title="assigned to someone else")
+    make_task(project=p, status=S.BACKLOG, title="unassigned")
+    db.flush()
+    db.add_all(
+        [
+            TaskAssignee(task_id=mine_task.id, user_id=member.id),
+            TaskAssignee(task_id=other_task.id, user_id=manager.id),
+        ]
+    )
+    db.flush()
+
+    team_view = _dashboard(client, auth_headers(member), scope="team")
+    mine_view = _dashboard(client, auth_headers(member), scope="mine")
+
+    # Team scope: every task in a project member belongs to, regardless of
+    # who it's assigned to (unchanged, existing behavior).
+    assert team_view["headline"]["open"] == 3
+    # Mine scope: narrows further, within that same visible project, to just
+    # the one task assigned to member.
+    assert mine_view["headline"]["open"] == 1
+    assert {r["status"]: r["count"] for r in mine_view["by_status"]}["backlog"] == 1

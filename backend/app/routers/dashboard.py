@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter
 
 from app.deps import CurrentUser, DbSession
@@ -12,5 +14,9 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 
 @router.get("", response_model=DashboardOut)
-def get_dashboard(db: DbSession, user: CurrentUser) -> DashboardOut:
-    return DashboardOut.model_validate(dashboard_service.get_dashboard(db, viewer=user))
+def get_dashboard(
+    db: DbSession, user: CurrentUser, scope: Literal["team", "mine"] = "team"
+) -> DashboardOut:
+    return DashboardOut.model_validate(
+        dashboard_service.get_dashboard(db, viewer=user, mine_only=scope == "mine")
+    )

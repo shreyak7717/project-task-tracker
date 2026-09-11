@@ -40,15 +40,29 @@ def _utc_midnight(d: date) -> datetime:
     return datetime.combine(d, time.min, tzinfo=UTC)
 
 
-def get_dashboard(db: Session, *, viewer: User, today: date | None = None) -> dict:
+def get_dashboard(
+    db: Session, *, viewer: User, today: date | None = None, mine_only: bool = False
+) -> dict:
     today = today or datetime.now(UTC).date()
     week_start = today - timedelta(days=6)
     windows = _week_windows(today)
 
     visible = task_visibility_clause(db, viewer)
+    # Opt-in on top of visibility, not a replacement for it: "My work" still
+    # only ever shows tasks in projects the caller can see, further narrowed
+    # to ones they're personally assigned to.
+    mine = (
+        Task.id.in_(select(TaskAssignee.task_id).where(TaskAssignee.user_id == viewer.id))
+        if mine_only
+        else None
+    )
 
     def scoped(stmt):
-        return stmt if visible is None else stmt.where(visible)
+        if visible is not None:
+            stmt = stmt.where(visible)
+        if mine is not None:
+            stmt = stmt.where(mine)
+        return stmt
 
     headline = db.execute(
         scoped(
