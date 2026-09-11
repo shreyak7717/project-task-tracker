@@ -18,7 +18,7 @@ from app.models import Project, Task, TaskDependency, TaskEvent, User
 from app.schemas.task import TaskCreate, TaskUpdate
 from app.services import events, lifecycle
 from app.services.errors import ConflictError, NotFoundError, ValidationError
-from app.services.visibility import can_see_project
+from app.services.visibility import can_see_project, ensure_project_active
 
 _EDITABLE_FIELDS = ("title", "description", "priority", "due_date")
 
@@ -63,6 +63,9 @@ def unfinished_dependencies_of(db: Session, task: Task) -> list[Task]:
 
 
 def create_task(db: Session, *, project: Project, data: TaskCreate, actor: User) -> Task:
+    if project.is_archived:
+        raise ConflictError("Cannot create a task in an archived project")
+
     task = Task(
         project_id=project.id,
         title=data.title,
@@ -84,6 +87,8 @@ def create_task(db: Session, *, project: Project, data: TaskCreate, actor: User)
 
 
 def update_task(db: Session, *, task: Task, data: TaskUpdate, actor: User) -> Task:
+    ensure_project_active(db, task.project_id)
+
     changes: dict[str, tuple[object, object]] = {}
     for field in _EDITABLE_FIELDS:
         if field not in data.model_fields_set:

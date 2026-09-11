@@ -23,6 +23,7 @@ from app.enums import TaskEventType, TaskStatus
 from app.models import Task, User
 from app.services import events
 from app.services.errors import ValidationError
+from app.services.visibility import ensure_project_active
 
 B, IP, IR, D, BL = (
     TaskStatus.BACKLOG,
@@ -76,6 +77,8 @@ def transition(
     actor: User | None,
     unfinished_dependency_titles: Sequence[str] = (),
 ) -> None:
+    ensure_project_active(db, task.project_id)
+
     from_status = TaskStatus(task.status)
     to_status = TaskStatus(to_status)
 

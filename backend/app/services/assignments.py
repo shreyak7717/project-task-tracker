@@ -21,6 +21,7 @@ from app.enums import TaskEventType
 from app.models import Project, ProjectMembership, Task, TaskAssignee, User
 from app.services import events
 from app.services.errors import NotFoundError, ValidationError
+from app.services.visibility import ensure_project_active
 
 
 def _project_member_ids(db: Session, project_id: uuid.UUID) -> set[uuid.UUID]:
@@ -54,6 +55,8 @@ def assignee_users(db: Session, task: Task) -> list[User]:
 
 
 def assign(db: Session, *, task: Task, user_id: uuid.UUID, actor: User) -> TaskAssignee:
+    ensure_project_active(db, task.project_id)
+
     existing = db.scalar(
         select(TaskAssignee).where(TaskAssignee.task_id == task.id, TaskAssignee.user_id == user_id)
     )
@@ -74,6 +77,8 @@ def assign(db: Session, *, task: Task, user_id: uuid.UUID, actor: User) -> TaskA
 
 
 def unassign(db: Session, *, task: Task, user_id: uuid.UUID, actor: User) -> None:
+    ensure_project_active(db, task.project_id)
+
     row = db.scalar(
         select(TaskAssignee).where(TaskAssignee.task_id == task.id, TaskAssignee.user_id == user_id)
     )
@@ -96,6 +101,8 @@ def set_assignees(
     db: Session, *, task: Task, user_ids: Iterable[uuid.UUID], actor: User
 ) -> list[User]:
     """Replace the task's assignee set. Atomic: validate everything first."""
+    ensure_project_active(db, task.project_id)
+
     requested = list(dict.fromkeys(user_ids))  # de-dupe, keep order
 
     users = _users_by_id(db, requested)

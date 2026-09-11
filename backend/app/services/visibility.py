@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.enums import Role
 from app.models import Project, ProjectMembership, Task, User
-from app.services.errors import NotFoundError
+from app.services.errors import ConflictError, NotFoundError
 
 
 def is_manager(user: User) -> bool:
@@ -73,3 +73,17 @@ def get_visible_project_or_404(db: Session, user: User, project_id: uuid.UUID) -
     if project is None or not can_see_project(db, user, project):
         raise NotFoundError("Project not found")
     return project
+
+
+def ensure_project_active(db: Session, project_id: uuid.UUID) -> None:
+    """Raise ``ConflictError`` if a task's project has been archived.
+
+    Archiving freezes a project's work: creating, transitioning, assigning, or
+    editing a task in it is blocked once archived (409), while comments and
+    dependency edits are intentionally left open. Unarchiving (manager-only,
+    already enforced by ``ManagerUser`` on the restore endpoint) lifts this
+    immediately since it checks live state, not a cached flag.
+    """
+    project = db.get(Project, project_id)
+    if project is not None and project.is_archived:
+        raise ConflictError("Project is archived")

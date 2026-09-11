@@ -8,7 +8,7 @@ from sqlalchemy import select
 from app.enums import TaskStatus as S
 from app.models import TaskEvent
 from app.services import lifecycle
-from app.services.errors import ValidationError
+from app.services.errors import ConflictError, ValidationError
 
 
 def test_backlog_to_in_progress_is_allowed(db, make_task, manager):
@@ -76,6 +76,14 @@ def test_moving_to_the_same_status_is_rejected(db, make_task, manager):
     task = make_task(status=S.BACKLOG)
     with pytest.raises(ValidationError, match="already"):
         lifecycle.transition(db, task=task, to_status=S.BACKLOG, actor=manager)
+
+
+def test_transition_on_archived_project_is_rejected(db, make_project, make_task, manager):
+    project = make_project(key="ARCH", archived=True)
+    task = make_task(project=project, status=S.BACKLOG)
+    with pytest.raises(ConflictError, match="archived"):
+        lifecycle.transition(db, task=task, to_status=S.IN_PROGRESS, actor=manager)
+    assert task.status == S.BACKLOG
 
 
 def test_allowed_transitions_drops_done_when_dependencies_unfinished(db, make_task):

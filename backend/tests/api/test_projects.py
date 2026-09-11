@@ -107,6 +107,90 @@ def test_archive_then_restore(client, manager, auth_headers, make_project):
     assert restored.json()["is_archived"] is False
 
 
+def test_member_cannot_archive_or_restore(client, member, auth_headers, make_project):
+    project = make_project(key="ARCH2", members=(member,))
+    assert (
+        client.post(f"/api/projects/{project.id}/archive", headers=auth_headers(member)).status_code
+        == 403
+    )
+    assert (
+        client.post(f"/api/projects/{project.id}/restore", headers=auth_headers(member)).status_code
+        == 403
+    )
+
+
+def test_archiving_freezes_tasks_restoring_resumes_them(
+    client, manager, auth_headers, make_project
+):
+    """Create/transition/assign/edit are blocked (409) once a project is
+    archived, and work again immediately once a manager restores it. Comments
+    and dependency edits are intentionally left open even while archived."""
+    project = make_project(key="FRZ")
+    task = client.post(
+        f"/api/projects/{project.id}/tasks",
+        json={"title": "T", "description": "", "priority": "medium"},
+        headers=auth_headers(manager),
+    ).json()
+    other = client.post(
+        f"/api/projects/{project.id}/tasks",
+        json={"title": "Blocker", "description": "", "priority": "medium"},
+        headers=auth_headers(manager),
+    ).json()
+
+    client.post(f"/api/projects/{project.id}/archive", headers=auth_headers(manager))
+
+    create_resp = client.post(
+        f"/api/projects/{project.id}/tasks",
+        json={"title": "Too late", "description": "", "priority": "medium"},
+        headers=auth_headers(manager),
+    )
+    assert create_resp.status_code == 409
+
+    transition_resp = client.post(
+        f"/api/tasks/{task['id']}/transition",
+        json={"to_status": "in_progress"},
+        headers=auth_headers(manager),
+    )
+    assert transition_resp.status_code == 409
+
+    assign_resp = client.post(
+        f"/api/tasks/{task['id']}/assignees/{manager.id}", headers=auth_headers(manager)
+    )
+    assert assign_resp.status_code == 409
+
+    edit_resp = client.patch(
+        f"/api/tasks/{task['id']}", json={"title": "Renamed"}, headers=auth_headers(manager)
+    )
+    assert edit_resp.status_code == 409
+
+    # Comments are intentionally still allowed on an archived project.
+    comment_resp = client.post(
+        f"/api/tasks/{task['id']}/comments",
+        json={"body": "still open"},
+        headers=auth_headers(manager),
+    )
+    assert comment_resp.status_code == 201
+
+    # Dependency edits are intentionally still allowed on an archived project.
+    dependency_resp = client.post(
+        f"/api/tasks/{task['id']}/dependencies",
+        json={"depends_on_task_id": other["id"]},
+        headers=auth_headers(manager),
+    )
+    assert dependency_resp.status_code == 201
+
+    client.post(f"/api/projects/{project.id}/restore", headers=auth_headers(manager))
+
+    assert (
+        client.post(
+            f"/api/tasks/{task['id']}/transition",
+            json={"to_status": "in_progress"},
+            headers=auth_headers(manager),
+        ).status_code
+        == 200
+    )
+
+
 # --- updates + membership -------------------------------------------
 
 

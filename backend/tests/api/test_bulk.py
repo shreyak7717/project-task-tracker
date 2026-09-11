@@ -130,6 +130,29 @@ def test_bulk_reports_tasks_the_caller_cannot_see_rather_than_failing_the_reques
     assert by_id[hidden["id"]]["ok"] is False
 
 
+def test_bulk_reports_a_task_on_an_archived_project_without_failing_the_rest(
+    client, manager, auth_headers, make_project
+):
+    live = make_project(key="LIVE")
+    frozen = make_project(key="FRZN")
+    ok_task = _task(client, auth_headers(manager), live.id, title="ok")
+    stuck_task = _task(client, auth_headers(manager), frozen.id, title="stuck")
+    client.post(f"/api/projects/{frozen.id}/archive", headers=auth_headers(manager))
+
+    resp = _bulk(
+        client,
+        auth_headers(manager),
+        [ok_task["id"], stuck_task["id"]],
+        {"kind": "transition", "to_status": "in_progress"},
+    )
+    body = resp.json()
+    assert body["succeeded"] == 1 and body["failed"] == 1
+    by_id = {r["task_id"]: r for r in body["results"]}
+    assert by_id[ok_task["id"]]["ok"] is True
+    assert by_id[stuck_task["id"]]["ok"] is False
+    assert "archived" in by_id[stuck_task["id"]]["error"]
+
+
 def test_bulk_dedupes_task_ids(client, manager, auth_headers, make_project):
     p = make_project()
     task = _task(client, auth_headers(manager), p.id)
