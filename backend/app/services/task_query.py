@@ -58,6 +58,9 @@ def _filtered(db: Session, *, viewer: User, params: TaskListParams) -> Select:
     if visible is not None:
         stmt = stmt.where(visible)
 
+    if not params.include_archived:
+        stmt = stmt.where(Project.is_archived.is_(False))
+
     if params.project_id is not None:
         stmt = stmt.where(Task.project_id == params.project_id)
 

@@ -35,6 +35,7 @@ def _item(task: Task) -> TaskListItem:
         **TaskOut.model_validate(task).model_dump(),
         project_key=task.project.key,
         project_name=task.project.name,
+        project_archived=task.project.is_archived,
         assignees=[UserOut.model_validate(a.user) for a in task.assignees],
     )
 

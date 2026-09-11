@@ -87,6 +87,7 @@ export interface TaskDetail extends Task {
 export interface TaskListItem extends Task {
   project_key: string
   project_name: string
+  project_archived: boolean
   assignees: User[]
 }
 
@@ -154,6 +155,7 @@ export interface AlertItem {
   priority: TaskPriority
   due_date: string
   days_overdue: number
+  assigned_to_me: boolean
 }
 export interface AlertsResponse {
   count: number

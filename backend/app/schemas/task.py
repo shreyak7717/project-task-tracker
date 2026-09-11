@@ -109,6 +109,7 @@ class AssigneesUpdate(BaseModel):
 class TaskListItem(TaskOut):
     project_key: str
     project_name: str
+    project_archived: bool
     assignees: list[UserOut] = Field(default_factory=list)
 
 
@@ -122,6 +123,7 @@ class TaskListParams(BaseModel):
     assignee_id: uuid.UUID | None = None
     unassigned: bool = False
     overdue: bool = False
+    include_archived: bool = False
     sort: Literal["due_date", "priority", "updated_at"] = "updated_at"
     order: Literal["asc", "desc"] = "desc"
     page: int = Field(default=1, ge=1)

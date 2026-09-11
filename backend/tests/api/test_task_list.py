@@ -124,3 +124,21 @@ def test_list_item_carries_project_and_assignees(
     item = _list(client, auth_headers(manager), q="x")["items"][0]
     assert item["project_key"] == "ACM"
     assert [a["id"] for a in item["assignees"]] == [str(member.id)]
+
+
+def test_archived_project_tasks_are_hidden_unless_included(client, manager, auth_headers, make_project):
+    live = make_project(key="LIVE")
+    frozen = make_project(key="FRZN")
+    _task(client, auth_headers(manager), live.id, title="live task")
+    stuck = _task(client, auth_headers(manager), frozen.id, title="frozen task")
+    client.post(f"/api/projects/{frozen.id}/archive", headers=auth_headers(manager))
+
+    default = _list(client, auth_headers(manager))
+    assert {i["title"] for i in default["items"]} == {"live task"}
+
+    with_archived = _list(client, auth_headers(manager), include_archived="true")
+    assert {i["title"] for i in with_archived["items"]} == {"live task", "frozen task"}
+    stuck_item = next(i for i in with_archived["items"] if i["id"] == stuck["id"])
+    assert stuck_item["project_archived"] is True
+    live_item = next(i for i in with_archived["items"] if i["project_key"] == "LIVE")
+    assert live_item["project_archived"] is False

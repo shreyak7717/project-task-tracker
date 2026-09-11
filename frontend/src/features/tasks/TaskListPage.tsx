@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 import { EmptyState, ErrorState, Loading, PageHeader, StatusBadge } from '@/components/common'
 import { BulkBar } from '@/features/tasks/BulkBar'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -33,6 +34,7 @@ export function TaskListPage({ mine = false }: { mine?: boolean }) {
   const priority = params.get('priority') ?? ''
   const projectId = params.get('project_id') ?? ''
   const overdue = params.get('overdue') === 'true'
+  const includeArchived = params.get('archived') === 'true'
   const sort = params.get('sort') ?? 'updated_at'
   const page = Number(params.get('page') ?? '1')
 
@@ -52,11 +54,12 @@ export function TaskListPage({ mine = false }: { mine?: boolean }) {
       priority: priority || undefined,
       project_id: projectId || undefined,
       overdue: overdue || undefined,
+      include_archived: includeArchived || undefined,
       sort,
       page,
       page_size: PAGE_SIZE,
     }),
-    [q, status, priority, projectId, overdue, sort, page],
+    [q, status, priority, projectId, overdue, includeArchived, sort, page],
   )
 
   const path = mine ? '/api/me/tasks' : '/api/tasks'
@@ -141,6 +144,13 @@ export function TaskListPage({ mine = false }: { mine?: boolean }) {
           />
           Overdue
         </label>
+        <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Checkbox
+            checked={includeArchived}
+            onCheckedChange={(v) => setParam('archived', v === true ? 'true' : '')}
+          />
+          Show archived
+        </label>
         <FilterSelect
           value={sort}
           onChange={(v) => setParam('sort', v)}
@@ -211,6 +221,11 @@ export function TaskListPage({ mine = false }: { mine?: boolean }) {
                     </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {t.project_key}
+                      {t.project_archived && (
+                        <Badge variant="secondary" className="ml-2 font-sans">
+                          Archived
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={t.status} />
