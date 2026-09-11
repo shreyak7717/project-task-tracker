@@ -239,7 +239,6 @@ Several rules are intentionally enforced in the service layer so they cannot be 
 These were deliberately left out because they were either outside the brief, unnecessary for the take-home scope, or explicitly described as stretch work.
 
 - **Open user registration** — no public sign-up. Managers control who joins via a one-time invitation; the employee sets their own password on accept.
-- **Real invitation email delivery** — no email provider integrated. The invitation URL is returned/logged instead, so the full flow is still testable; a provider could be added later without changing the invitation model.
 - **Refresh-token revocation store** — refresh tokens are stateless and just expire; adding a server-side revocation list wasn't required for the assignment.
 - **Task reference numbers** — no human-readable project/task numbers; UUIDs were sufficient and the brief didn't ask for them.
 - **Multi-hop dependency cycle detection** — self- and immediate-reverse dependencies are blocked; full graph-based cycle detection across longer chains was left as stretch work.
