@@ -32,3 +32,7 @@ services:
         sync: false
       - key: INITIAL_MANAGER_NAME
         sync: false
+      - key: SENDGRID_API_KEY
+        sync: false # from sendgrid.com; leave unset to skip real email sending
+      - key: EMAIL_FROM_ADDRESS
+        sync: false # must be a sender verified in SendGrid (Single Sender Verification)

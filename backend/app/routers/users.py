@@ -18,6 +18,7 @@ from app.enums import Role
 from app.models import Invitation, User
 from app.schemas.auth import InvitationCreate, InvitationCreated, InvitationOut
 from app.schemas.user import UserOut
+from app.services import email as email_service
 from app.services import invitations as invitation_service
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -35,8 +36,14 @@ def create_invitation(
         db, email=body.email, invited_by=manager
     )
     db.commit()
+    # Committed first: a failed/unconfigured send never affects invitation state.
+    accept_url = invitation_service.build_accept_url(raw_token)
+    email_sent = email_service.send_invitation_email(
+        to_email=invitation.email, accept_url=accept_url, expires_at=invitation.expires_at
+    )
     return InvitationCreated(
-        accept_url=invitation_service.build_accept_url(raw_token),
+        accept_url=accept_url,
+        email_sent=email_sent,
         **InvitationOut.model_validate(invitation).model_dump(),
     )
 

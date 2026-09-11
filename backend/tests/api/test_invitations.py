@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from urllib.parse import parse_qs, urlparse
 
+import httpx
 from sqlalchemy import select
 
 from app.models import Invitation
 from app.security import hash_invite_token
+from app.services import email as email_service
 
 ACCEPT = "/api/auth/invitations/accept"
 INVITATIONS = "/api/users/invitations"
@@ -24,18 +26,64 @@ def _invite(client, manager, auth_headers, email="newhire@example.com"):
 # --- creating ------------------------------------------------------------
 
 
-def test_manager_creates_invitation_and_only_the_hash_is_stored(client, manager, auth_headers, db):
+def test_manager_creates_invitation_and_only_the_hash_is_stored(
+    client, manager, auth_headers, db, monkeypatch
+):
+    # Force the "no provider configured" case explicitly rather than assuming
+    # it — a real SENDGRID_API_KEY in the developer's local .env would
+    # otherwise leak into this test and make it flaky depending on machine.
+    monkeypatch.setattr(email_service.settings, "sendgrid_api_key", None)
+
     resp = _invite(client, manager, auth_headers)
     assert resp.status_code == 201
     body = resp.json()
     assert body["email"] == "newhire@example.com"
     assert body["role"] == "member"
     assert body["accepted_at"] is None
+    # accept_url remains the fallback delivery path when nothing is sent.
+    assert body["email_sent"] is False
 
     raw = _token_from_url(body["accept_url"])
     inv = db.scalar(select(Invitation).where(Invitation.email == "newhire@example.com"))
     assert inv.token_hash == hash_invite_token(raw)
     assert raw not in (inv.token_hash,)
+
+
+def test_invitation_email_is_sent_when_a_provider_key_is_configured(
+    client, manager, auth_headers, monkeypatch
+):
+    monkeypatch.setattr(email_service.settings, "sendgrid_api_key", "fake-key")
+    monkeypatch.setattr(email_service.httpx, "post", lambda *a, **k: httpx.Response(202))
+
+    resp = _invite(client, manager, auth_headers, email="emailed@example.com")
+    assert resp.status_code == 201
+    assert resp.json()["email_sent"] is True
+    # accept_url is still returned even when the email send succeeded.
+    assert "token=" in resp.json()["accept_url"]
+
+
+def test_a_failed_send_does_not_affect_invitation_creation_or_acceptance(
+    client, manager, auth_headers, monkeypatch
+):
+    """Email is best-effort: creating the invitation already committed before
+    any send is attempted, so a broken provider must not change invitation
+    state — still created, still single-use, still expires normally."""
+    monkeypatch.setattr(email_service.settings, "sendgrid_api_key", "fake-key")
+
+    def _raise(*a, **k):
+        raise httpx.ConnectError("simulated provider outage")
+
+    monkeypatch.setattr(email_service.httpx, "post", _raise)
+
+    resp = _invite(client, manager, auth_headers, email="stillworks@example.com")
+    assert resp.status_code == 201
+    assert resp.json()["email_sent"] is False
+
+    raw = _token_from_url(resp.json()["accept_url"])
+    first = client.post(ACCEPT, json={"token": raw, "full_name": "A", "password": "password123"})
+    assert first.status_code == 201
+    second = client.post(ACCEPT, json={"token": raw, "full_name": "B", "password": "password123"})
+    assert second.status_code == 400  # still single-use
 
 
 def test_member_cannot_create_invitation(client, member, auth_headers):

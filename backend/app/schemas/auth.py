@@ -56,6 +56,7 @@ class InvitationCreated(InvitationOut):
     """Returned once, at creation time, with the raw accept link."""
 
     accept_url: str
+    email_sent: bool
 
 
 class AcceptInvitationRequest(BaseModel):

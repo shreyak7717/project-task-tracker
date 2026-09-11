@@ -61,7 +61,7 @@ function InviteDialog() {
         <DialogHeader>
           <DialogTitle>Invite a member</DialogTitle>
           <DialogDescription>
-            No email is sent yet — you'll get a one-time link to share manually.
+            They'll get a one-time link to set up their account.
           </DialogDescription>
         </DialogHeader>
 
@@ -83,8 +83,18 @@ function InviteDialog() {
         ) : (
           <div className="space-y-3">
             <p className="text-sm">
-              Invitation created for <span className="font-medium">{created.email}</span>. Share
-              this link with them (expires {formatDate(created.expires_at)}):
+              {created.email_sent ? (
+                <>
+                  An email was sent to <span className="font-medium">{created.email}</span>. You
+                  can also share this link directly
+                </>
+              ) : (
+                <>
+                  Invitation created for <span className="font-medium">{created.email}</span>. No
+                  email was sent — share this link with them manually
+                </>
+              )}{' '}
+              (expires {formatDate(created.expires_at)}):
             </p>
             <div className="flex items-center gap-2 rounded-md border bg-muted p-2 text-xs">
               <span className="min-w-0 flex-1 truncate">{created.accept_url}</span>

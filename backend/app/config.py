@@ -17,6 +17,15 @@ class Settings(BaseSettings):
     frontend_base_url: str = "http://localhost:5173"
     invite_expiry_days: int = 7
 
+    # SendGrid API key for real invitation email delivery. Unset by default —
+    # local dev and tests run with no key, which skips sending entirely and
+    # falls back to the accept_url returned in the API response.
+    sendgrid_api_key: str | None = None
+    # Must be a sender SendGrid has verified for this account (Settings ->
+    # Sender Authentication -> Single Sender Verification) — SendGrid rejects
+    # sends from an unverified address regardless of API key validity.
+    email_from_address: str = "invites@example.com"
+
 
 @lru_cache
 def get_settings() -> Settings:

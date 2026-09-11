@@ -54,6 +54,7 @@ export interface Invitation {
 }
 export interface InvitationCreated extends Invitation {
   accept_url: string
+  email_sent: boolean
 }
 
 export interface TaskRef {
