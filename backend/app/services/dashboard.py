@@ -1,7 +1,9 @@
 """Dashboard aggregates (brief goal 8).
 
 Everything is scoped to the caller's visible projects via the shared
-``task_visibility_clause``. Every date boundary is derived from **one** UTC
+``task_visibility_clause``, and archived projects' tasks are always excluded
+(no toggle — a frozen project shouldn't skew a "what's going on" snapshot).
+Every date boundary is derived from **one** UTC
 reference computed here and passed as a bind parameter — the database session
 timezone is never assumed to be UTC, so ``CURRENT_DATE`` / ``now()`` /
 ``date_trunc`` are not used.
@@ -15,7 +17,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.enums import TaskStatus
-from app.models import Task, TaskAssignee, User
+from app.models import Project, Task, TaskAssignee, User
 from app.services.visibility import task_visibility_clause
 
 _OPEN = Task.status != TaskStatus.DONE.value
@@ -58,6 +60,12 @@ def get_dashboard(
     )
 
     def scoped(stmt):
+        # Frozen work shouldn't skew a "what's going on" snapshot — unlike the
+        # task lists, there's no "show archived" toggle here, so this is
+        # unconditional rather than opt-in.
+        stmt = stmt.where(
+            Task.project_id.in_(select(Project.id).where(Project.is_archived.is_(False)))
+        )
         if visible is not None:
             stmt = stmt.where(visible)
         if mine is not None:

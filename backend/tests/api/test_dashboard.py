@@ -113,6 +113,20 @@ def test_dashboard_is_scoped_to_visible_projects(
     assert _dashboard(client, auth_headers(manager))["headline"]["open"] == 3
 
 
+def test_archived_project_tasks_never_count_towards_the_dashboard(
+    client, manager, auth_headers, make_project, make_task, db
+):
+    live = make_project(key="LIVE")
+    frozen = make_project(key="FRZN")
+    make_task(project=live, status=S.BACKLOG)
+    make_task(project=frozen, status=S.BACKLOG)
+    db.flush()
+    client.post(f"/api/projects/{frozen.id}/archive", headers=auth_headers(manager))
+
+    headline = _dashboard(client, auth_headers(manager))["headline"]
+    assert headline["open"] == 1  # the archived project's task is excluded
+
+
 def test_default_scope_is_every_visible_task_unchanged(
     client, manager, auth_headers, make_project, make_task, db
 ):
