@@ -14,6 +14,9 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    # Content-Disposition isn't on the CORS-safelisted response headers, so a
+    # cross-origin fetch() can't read the CSV filename without this.
+    expose_headers=["Content-Disposition"],
 )
 
 
